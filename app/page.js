@@ -1,3 +1,6 @@
+import CreateAssessmentButton from "@/components/buttons/CreateAssessmentButton"
+
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-white p-6 text-gray-900">
@@ -10,13 +13,8 @@ export default function Home() {
             Minimal prototype for recording examination button clicks.
           </p>
         </header>
+        <CreateAssessmentButton />
 
-        <section className="rounded-xl border p-4">
-          <h2 className="mb-3 text-xl font-semibold">Neue Erhebung</h2>
-          <button className="rounded-lg bg-black px-4 py-3 font-semibold text-white">
-            Neue Erhebung erstellen
-          </button>
-        </section>
       </div>
     </main>
   )

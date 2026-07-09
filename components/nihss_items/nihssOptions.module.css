@@ -1,0 +1,110 @@
+.optionButton {
+  width: 100%;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  text-align: left;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  font-weight: 600;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.optionButton:hover {
+  transform: translateY(-1px);
+}
+
+.optionButton:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.35);
+  outline-offset: 2px;
+}
+
+/* 0 = normal / least severe */
+.score0 {
+  background-color: #ecfdf3;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.score0Selected {
+  background-color: #16a34a;
+  border-color: #15803d;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+}
+
+/* 1 = mild */
+.score1 {
+  background-color: #fefce8;
+  border-color: #fde047;
+  color: #854d0e;
+}
+
+.score1Selected {
+  background-color: #f3b329;
+  border-color: #a19207;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(202, 138, 4, 0.25);
+}
+
+/* 2 = moderate */
+.score2 {
+  background-color: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+.score2Selected {
+  background-color: #f57b39;
+  border-color: #c2410c;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.25);
+}
+
+/* 3 = severe */
+.score3 {
+  background-color: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.score3Selected {
+  background-color: #e24d09;
+  border-color: #b91c1c;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+}
+
+/* 4 = very severe / maximum motor deficit */
+.score4 {
+  background-color: #fdf2f8;
+  border-color: #f9a8d4;
+  color: #9d174d;
+}
+
+.score4Selected {
+  background-color: #be123c;
+  border-color: #9f1239;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(190, 18, 60, 0.25);
+}
+
+/* UN / not testable */
+.scoreUN {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.scoreUNSelected {
+  background-color: #475569;
+  border-color: #334155;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.25);
+}
