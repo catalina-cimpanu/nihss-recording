@@ -1,5 +1,7 @@
 import StartButton from "@/components/buttons/StartButton"
 import EndButton from "@/components/buttons/EndButton"
+
+import ItemCard from "@/components/nihss_items/ItemCard"
 import MotorikArmRechtsCard from "@/components/nihss_items/MotorikArmRechtsCard"
 import MotorikArmLinksCard from "@/components/nihss_items/MotorikArmLinksCard"
 
@@ -15,19 +17,11 @@ export default async function AssessmentPage({ params }) {
         </header>
 
         <StartButton />
+        <ItemCard title='"Heben Sie bitte beide Arme"' subtitle='5. Motorik Arme'>
+            <MotorikArmRechtsCard />
+            <MotorikArmLinksCard />
+        </ItemCard>
 
-        <section className="space-y-4 rounded-xl border p-4">
-          <div>
-            <h2 className="text-xl font-semibold">„Heben Sie bitte beide Arme”</h2>
-            <p className="text-sm text-gray-600">
-              5. Motorik Arme
-            </p>
-          </div>
-          <MotorikArmRechtsCard />
-          <MotorikArmLinksCard />
-
-        </section>
-        
         <EndButton />
 
       </div>
