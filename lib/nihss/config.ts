@@ -88,23 +88,26 @@ export function isOptionSelected(
   return stored === optionValue;
 }
 
-export function isAbnormalField(
+export function getSelectedFieldColor(
   field: ClickableField,
   erhebung: ErhebungRow,
-): boolean {
-  if (field.scoreColumn) {
-    const score = erhebung[field.scoreColumn];
-    return typeof score === "number" && score > 0;
+): ScoreColor | null {
+  const selected = field.options.filter((option) =>
+    isOptionSelected(
+      erhebung[field.valueColumn],
+      option.value,
+      field.selection,
+    ),
+  );
+
+  if (selected.length === 0) {
+    return null;
   }
 
-  if (field.selection === "multiple") {
-    return parseStoredValues(erhebung[field.valueColumn]).some(
-      (value) => value.startsWith("1 -") || value.startsWith("1 –"),
-    );
-  }
-
-  const value = erhebung[field.valueColumn];
-  return typeof value === "string" && value.length > 0;
+  const ranked = [...selected].sort(
+    (left, right) => (right.score ?? -1) - (left.score ?? -1),
+  );
+  return ranked[0].color;
 }
 
 export type FormSection = {

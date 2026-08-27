@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import FieldOptions from "@/components/erhebung/FieldOptions";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
+import ScrollToTopButton from "@/components/erhebung/ScrollToTopButton";
 import StickyScoreBar from "@/components/erhebung/StickyScoreBar";
+import optionStyles from "@/components/nihss_items/nihssOptions.module.css";
 import { persistErhebungAndEreignisse } from "@/lib/db/erhebungen";
 import {
   FORM_SECTIONS,
@@ -11,8 +13,9 @@ import {
   NIHSS_FIELDS,
   STROKE_FIELD,
   getFieldByKey,
-  isAbnormalField,
+  getSelectedFieldColor,
   type ClickableField,
+  type ScoreColor,
 } from "@/lib/nihss/config";
 import {
   applyFieldClick,
@@ -39,6 +42,26 @@ type ErhebungWorkspaceProps = {
 
 function findOption(field: ClickableField, value: string) {
   return field.options.find((option) => option.value === value);
+}
+
+function fieldFrameClass(color: ScoreColor | null): string {
+  if (!color) {
+    return optionStyles.fieldFrameEmpty;
+  }
+
+  const frames: Record<ScoreColor, string> = {
+    score0: optionStyles.fieldFrameScore0,
+    score1: optionStyles.fieldFrameScore1,
+    score2: optionStyles.fieldFrameScore2,
+    score3: optionStyles.fieldFrameScore3,
+    score4: optionStyles.fieldFrameScore4,
+    scoreUN: optionStyles.fieldFrameScoreUN,
+    stroke: optionStyles.fieldFrameEmpty,
+    lyse: optionStyles.fieldFrameEmpty,
+    side: optionStyles.fieldFrameSide,
+  };
+
+  return frames[color];
 }
 
 function closeDialogMessage(args: {
@@ -257,7 +280,11 @@ export default function ErhebungWorkspace({
         onSelect={handleSelect}
       />
 
-      <div className="mx-auto max-w-4xl space-y-4 px-4 py-4">
+      <div
+        className={`mx-auto max-w-4xl space-y-4 px-4 py-4 ${
+          readOnly ? "pb-4" : "pb-28 md:pb-4"
+        }`}
+      >
         {readOnly ? (
           <p className="rounded-lg bg-tempis-ice px-3 py-2 text-sm">
             Diese Erhebung ist abgeschlossen und nur noch lesbar.
@@ -292,7 +319,7 @@ export default function ErhebungWorkspace({
             type="button"
             onClick={handleStopRequest}
             disabled={readOnly}
-            className="rounded-lg bg-tempis-signal px-4 py-3 font-semibold text-white hover:bg-tempis-signal-dark disabled:opacity-60"
+            className="hidden rounded-lg bg-tempis-signal px-4 py-3 font-semibold text-white hover:bg-tempis-signal-dark disabled:opacity-60 md:inline-flex"
           >
             Untersuchung beenden
           </button>
@@ -310,7 +337,8 @@ export default function ErhebungWorkspace({
         ) : null}
 
         {closeDialogOpen ? (
-          <div className="space-y-3 rounded-xl border border-tempis-orange bg-surface p-3">
+          <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-4 md:items-center">
+            <div className="w-full max-w-lg space-y-3 rounded-xl border border-tempis-orange bg-surface p-4 shadow-lg">
             <p className="text-sm">
               {closeDialogMessage({
                 isIncomplete,
@@ -347,6 +375,7 @@ export default function ErhebungWorkspace({
                 Abbrechen
               </button>
             </div>
+            </div>
           </div>
         ) : null}
 
@@ -371,33 +400,34 @@ export default function ErhebungWorkspace({
                   <p className="mt-1 text-sm text-muted">{section.prompt}</p>
                 ) : null}
               </div>
-              {fields.map((field) => (
-                <div
-                  key={field.key}
-                  className={
-                    isAbnormalField(field, erhebung)
-                      ? "space-y-2 rounded-lg border border-tempis-orange/50 bg-tempis-orange/5 p-2"
-                      : "space-y-2"
-                  }
-                >
-                  <h3 className="text-sm font-semibold">{field.label}</h3>
-                  {field.selection === "multiple" ? (
-                    <p className="text-xs text-muted">
-                      Mehrfachauswahl möglich
-                    </p>
-                  ) : null}
-                  <FieldOptions
-                    field={field}
-                    erhebung={erhebung}
-                    readOnly={readOnly}
-                    compact={
-                      field.selection === "multiple" ||
-                      field.options.every((option) => option.color === "side")
-                    }
-                    onSelect={handleSelect}
-                  />
-                </div>
-              ))}
+              {fields.map((field) => {
+                const selectionColor = getSelectedFieldColor(field, erhebung);
+                const frameColorClass = fieldFrameClass(selectionColor);
+
+                return (
+                  <div
+                    key={field.key}
+                    className={`space-y-2 ${optionStyles.fieldFrame} ${frameColorClass}`}
+                  >
+                    <h3 className="text-sm font-semibold">{field.label}</h3>
+                    {field.selection === "multiple" ? (
+                      <p className="text-xs text-muted">
+                        Mehrfachauswahl möglich
+                      </p>
+                    ) : null}
+                    <FieldOptions
+                      field={field}
+                      erhebung={erhebung}
+                      readOnly={readOnly}
+                      compact={
+                        field.selection === "multiple" ||
+                        field.options.every((option) => option.color === "side")
+                      }
+                      onSelect={handleSelect}
+                    />
+                  </div>
+                );
+              })}
             </section>
           );
         })}
@@ -427,8 +457,33 @@ export default function ErhebungWorkspace({
         </section>
       </div>
 
+      {!readOnly ? (
+        <div className="fixed inset-x-0 bottom-0 z-50 flex flex-col md:hidden">
+          <ScrollToTopButton variant="docked" />
+          <div className="border-t border-border bg-surface px-3 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+            <button
+              type="button"
+              onClick={handleStopRequest}
+              className="w-full rounded-lg bg-tempis-signal px-4 py-1.5 text-sm font-semibold text-white hover:bg-tempis-signal-dark"
+            >
+              Untersuchung beenden
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <ScrollToTopButton
+        className={readOnly ? "bottom-4" : "hidden bottom-4 md:flex"}
+      />
+
       {isSaving ? (
-        <p className="pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-tempis-blue-dark px-4 py-2 text-sm font-semibold text-white shadow-lg">
+        <p
+          className={`pointer-events-none fixed left-1/2 z-[60] -translate-x-1/2 rounded-full bg-tempis-blue-dark px-4 py-2 text-sm font-semibold text-white shadow-lg ${
+            readOnly
+              ? "bottom-4"
+              : "bottom-[calc(3.75rem+env(safe-area-inset-bottom))] md:bottom-4"
+          }`}
+        >
           Speichert…
         </p>
       ) : null}

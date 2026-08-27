@@ -10,6 +10,7 @@ type FieldOptionsProps = {
   erhebung: ErhebungRow;
   readOnly: boolean;
   compact?: boolean;
+  singleLine?: boolean;
   onSelect: (field: ClickableField, value: string) => void;
 };
 
@@ -18,12 +19,18 @@ export default function FieldOptions({
   erhebung,
   readOnly,
   compact,
+  singleLine,
   onSelect,
 }: FieldOptionsProps) {
   const stored = erhebung[field.valueColumn];
+  const rowClass = singleLine
+    ? styles.optionRowSingle
+    : compact
+      ? styles.optionRow
+      : "flex flex-col gap-2";
 
   return (
-    <div className={compact ? styles.optionRow : "flex flex-col gap-2"}>
+    <div className={rowClass}>
       {field.options.map((option) => (
         <OptionButton
           key={option.value}

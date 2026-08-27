@@ -33,6 +33,32 @@
   text-align: center;
 }
 
+.optionRowSingle {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+}
+
+.optionRowSingle .optionButton {
+  width: auto;
+  min-width: 0;
+  min-height: 1.55rem;
+  flex: 1 1 0;
+  padding: 0.12rem 0.2rem;
+  text-align: center;
+  font-size: clamp(0.56rem, 2.2vw, 0.72rem);
+  line-height: 1.15;
+  border-radius: 0.4rem;
+}
+
+@media (min-width: 768px) {
+  .optionRowSingle .optionButton {
+    min-height: 2.75rem;
+    padding: 0.45rem 0.5rem;
+    font-size: 0.85rem;
+  }
+}
+
 .optionButton:focus-visible {
   outline: 3px solid rgba(59, 130, 246, 0.35);
   outline-offset: 2px;
@@ -159,4 +185,51 @@
   border-color: #00648a;
   color: #ffffff;
   box-shadow: 0 0 0 3px rgba(86, 166, 190, 0.25);
+}
+
+.fieldFrame {
+  border-radius: 0.5rem;
+  border-width: 1px;
+  border-style: solid;
+  padding: 0.5rem;
+}
+
+.fieldFrameEmpty {
+  border-color: color-mix(in srgb, var(--border) 35%, transparent);
+  background-color: transparent;
+}
+
+.fieldFrameScore0 {
+  background-color: #ecfdf3;
+  border-color: #86efac;
+}
+
+.fieldFrameScore1 {
+  background-color: #fefce8;
+  border-color: #fde047;
+}
+
+.fieldFrameScore2 {
+  background-color: #fff7ed;
+  border-color: #fdba74;
+}
+
+.fieldFrameScore3 {
+  background-color: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.fieldFrameScore4 {
+  background-color: #fdf2f8;
+  border-color: #f9a8d4;
+}
+
+.fieldFrameScoreUN {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.fieldFrameSide {
+  background-color: #eef6f9;
+  border-color: #8ab3c1;
 }

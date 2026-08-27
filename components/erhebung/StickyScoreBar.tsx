@@ -18,43 +18,58 @@ export default function StickyScoreBar({
   onSelect,
 }: StickyScoreBarProps) {
   return (
-    <div className="sticky top-0 z-50 border-b border-border bg-surface/95 px-3 py-2 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/90">
-      <div className="mx-auto flex max-w-4xl flex-col gap-2">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-sm font-semibold">
-            NIHSS: {erhebung.nihss}
+    <div className="sticky top-0 z-50 border-b border-border bg-surface/95 px-2 pt-1.5 pb-2.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/90 md:px-3 md:py-2">
+      <div className="mx-auto flex max-w-4xl flex-col gap-1.5 md:gap-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0">
+          <p className="text-sm font-semibold leading-tight md:text-2xl">
+            NIHSS{" "}
+            <span className="tabular-nums">{erhebung.nihss}</span>
             <span className="mx-2 text-muted">·</span>
-            G-FAST: {erhebung.g_fast}
+            G-FAST{" "}
+            <span className="tabular-nums">{erhebung.g_fast}</span>
           </p>
-          <p className="text-xs text-muted">
-            Erhebung: {erhebung.erhebungs_id}
-            {incompleteCount > 0 ? ` · unvollständig (${incompleteCount})` : ""}
-          </p>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <div>
-            <p className="mb-1 text-xs font-semibold text-tempis-blue-darker">
-              Stroke (Dokumentation)
+          <div className="text-right text-xs text-muted">
+            <p className="hidden md:inline">
+              Erhebung: {erhebung.erhebungs_id}
+              {incompleteCount > 0 ? " · " : ""}
             </p>
-            <FieldOptions
-              field={STROKE_FIELD}
-              erhebung={erhebung}
-              readOnly={readOnly}
-              compact
-              onSelect={onSelect}
-            />
+            {incompleteCount > 0 ? (
+              <span>unvollständig ({incompleteCount})</span>
+            ) : null}
           </div>
-          <div>
-            <p className="mb-1 text-xs font-semibold text-tempis-signal">
-              Lyse (Dokumentation)
+        </div>
+        <div className="flex flex-col gap-1.5 md:grid md:grid-cols-2 md:gap-2">
+          <div className="flex items-center gap-1.5 md:block">
+            <p className="w-11 shrink-0 text-[0.7rem] font-semibold leading-tight text-tempis-blue-darker md:mb-1 md:w-auto md:text-xs">
+              <span className="md:hidden">Stroke</span>
+              <span className="hidden md:inline">Stroke (Dokumentation)</span>
             </p>
-            <FieldOptions
-              field={LYSE_FIELD}
-              erhebung={erhebung}
-              readOnly={readOnly}
-              compact
-              onSelect={onSelect}
-            />
+            <div className="min-w-0 flex-1">
+              <FieldOptions
+                field={STROKE_FIELD}
+                erhebung={erhebung}
+                readOnly={readOnly}
+                compact
+                singleLine
+                onSelect={onSelect}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 md:block">
+            <p className="w-11 shrink-0 text-[0.7rem] font-semibold leading-tight text-tempis-signal md:mb-1 md:w-auto md:text-xs">
+              <span className="md:hidden">Lyse</span>
+              <span className="hidden md:inline">Lyse (Dokumentation)</span>
+            </p>
+            <div className="min-w-0 flex-1">
+              <FieldOptions
+                field={LYSE_FIELD}
+                erhebung={erhebung}
+                readOnly={readOnly}
+                compact
+                singleLine
+                onSelect={onSelect}
+              />
+            </div>
           </div>
         </div>
       </div>
