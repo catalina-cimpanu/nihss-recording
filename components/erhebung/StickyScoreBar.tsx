@@ -1,5 +1,6 @@
 "use client";
 
+import ExamElapsedClock from "@/components/erhebung/ExamElapsedClock";
 import FieldOptions from "@/components/erhebung/FieldOptions";
 import { LYSE_FIELD, STROKE_FIELD, type ClickableField } from "@/lib/nihss/config";
 import { calculateGfast, calculateNihss } from "@/lib/nihss/scoring";
@@ -28,6 +29,16 @@ export default function StickyScoreBar({
             <span className="mx-2 text-muted">·</span>
             G-FAST{" "}
             <span className="tabular-nums">{calculateGfast(erhebung)}</span>
+            {erhebung.startzeit_untersuchung ? (
+              <>
+                <span className="mx-2 text-muted">·</span>
+                <ExamElapsedClock
+                  startAt={erhebung.startzeit_untersuchung}
+                  endAt={erhebung.endzeit_untersuchung}
+                  className="tabular-nums"
+                />
+              </>
+            ) : null}
           </p>
           <div className="text-right text-xs text-muted">
             <p className="hidden md:inline">
