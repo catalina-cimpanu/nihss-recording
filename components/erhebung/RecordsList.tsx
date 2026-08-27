@@ -6,10 +6,34 @@ import { useRouter } from "next/navigation";
 import type { ErhebungListItem } from "@/lib/db/erhebungen";
 import { softDeleteErhebung } from "@/lib/db/erhebungen";
 import { formatBerlinDateTime } from "@/lib/nihss/timeline";
+import ExamElapsedClock from "@/components/erhebung/ExamElapsedClock";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
 
 const DELETE_CONFIRMATION =
   "Diese Erhebung wirklich löschen? Sie wird ausgeblendet, bleibt aber in der Datenbank erhalten.";
+
+function RecordDuration({
+  startAt,
+  endAt,
+  title,
+}: {
+  startAt: string | null;
+  endAt: string | null;
+  title?: string;
+}) {
+  if (!startAt) {
+    return <span className="text-muted">–</span>;
+  }
+
+  return (
+    <ExamElapsedClock
+      startAt={startAt}
+      endAt={endAt}
+      className="tabular-nums"
+      title={title}
+    />
+  );
+}
 
 type RecordsListProps = {
   initialRows: ErhebungListItem[];
@@ -109,7 +133,27 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
               {row.untersuchungstyp} · {row.status}
             </p>
             <p className="text-sm">
-              NIHSS {row.nihss} · G-FAST {row.g_fast}
+              NIHSS {row.nihss} · G-FAST {row.g_fast} · Dauer{" "}
+              <RecordDuration
+                startAt={row.startzeit_untersuchung}
+                endAt={row.endzeit_untersuchung}
+                title="Untersuchungsdauer"
+              />
+            </p>
+            <p className="text-sm">
+              Start→Stroke{" "}
+              <RecordDuration
+                startAt={row.startzeit_untersuchung}
+                endAt={row.stroke_entscheidung_at}
+                title="Dauer Start bis Stroke-Entscheidung"
+              />
+              {" · "}
+              Stroke→Lyse{" "}
+              <RecordDuration
+                startAt={row.stroke_entscheidung_at}
+                endAt={row.lyse_entscheidung_at}
+                title="Dauer Stroke- bis Lyse-Entscheidung"
+              />
             </p>
             <p className="text-sm">
               Stroke: {row.stroke_status} · Lyse: {row.lyse_status}
@@ -132,6 +176,9 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
               <th className="px-3 py-2 font-semibold">Erstellt am</th>
               <th className="px-3 py-2 font-semibold">Untersuchungstyp</th>
               <th className="px-3 py-2 font-semibold">Status</th>
+              <th className="px-3 py-2 font-semibold">Dauer</th>
+              <th className="px-3 py-2 font-semibold">Start→Stroke</th>
+              <th className="px-3 py-2 font-semibold">Stroke→Lyse</th>
               <th className="px-3 py-2 font-semibold">NIHSS</th>
               <th className="px-3 py-2 font-semibold">G-FAST</th>
               <th className="px-3 py-2 font-semibold">Stroke</th>
@@ -152,6 +199,27 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
                   {row.untersuchungstyp}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">{row.status}</td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  <RecordDuration
+                    startAt={row.startzeit_untersuchung}
+                    endAt={row.endzeit_untersuchung}
+                    title="Untersuchungsdauer"
+                  />
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  <RecordDuration
+                    startAt={row.startzeit_untersuchung}
+                    endAt={row.stroke_entscheidung_at}
+                    title="Dauer Start bis Stroke-Entscheidung"
+                  />
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  <RecordDuration
+                    startAt={row.stroke_entscheidung_at}
+                    endAt={row.lyse_entscheidung_at}
+                    title="Dauer Stroke- bis Lyse-Entscheidung"
+                  />
+                </td>
                 <td className="px-3 py-2">{row.nihss}</td>
                 <td className="px-3 py-2">{row.g_fast}</td>
                 <td className="whitespace-nowrap px-3 py-2">

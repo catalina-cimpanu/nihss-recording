@@ -45,6 +45,18 @@ export default async function DashboardPage() {
           value={formatStatNumber(stats.averageGfast)}
         />
         <StatCard
+          label="Untersuchungsdauer Mittelwert"
+          value={stats.averageExamDurationLabel}
+        />
+        <StatCard
+          label="Start→Stroke Mittelwert"
+          value={stats.averageStartToStrokeLabel}
+        />
+        <StatCard
+          label="Stroke→Lyse Mittelwert"
+          value={stats.averageStrokeToLyseLabel}
+        />
+        <StatCard
           label="Unvollständig"
           value={String(stats.incompleteCount)}
         />

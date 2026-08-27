@@ -3,6 +3,7 @@
 import ExamElapsedClock from "@/components/erhebung/ExamElapsedClock";
 import FieldOptions from "@/components/erhebung/FieldOptions";
 import { LYSE_FIELD, STROKE_FIELD, type ClickableField } from "@/lib/nihss/config";
+import { getDecisionDurations } from "@/lib/nihss/duration";
 import { calculateGfast, calculateNihss } from "@/lib/nihss/scoring";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
@@ -13,33 +14,76 @@ type StickyScoreBarProps = {
   onSelect: (field: ClickableField, value: string) => void;
 };
 
+function DurationValue({
+  startAt,
+  endAt,
+  title,
+}: {
+  startAt: string | null;
+  endAt: string | null;
+  title: string;
+}) {
+  if (!startAt) {
+    return <span>–</span>;
+  }
+
+  return (
+    <ExamElapsedClock
+      startAt={startAt}
+      endAt={endAt}
+      className="tabular-nums text-foreground"
+      title={title}
+    />
+  );
+}
+
 export default function StickyScoreBar({
   erhebung,
   readOnly,
   incompleteCount,
   onSelect,
 }: StickyScoreBarProps) {
+  const durations = getDecisionDurations(erhebung);
+
   return (
     <div className="border-b border-border bg-surface/95 px-2 pt-1.5 pb-2.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/90 md:px-3 md:py-2">
       <div className="mx-auto flex max-w-4xl flex-col gap-1.5 md:gap-2">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0">
-          <p className="text-sm font-semibold leading-tight md:text-2xl">
-            NIHSS{" "}
-            <span className="tabular-nums">{calculateNihss(erhebung)}</span>
-            <span className="mx-2 text-muted">·</span>
-            G-FAST{" "}
-            <span className="tabular-nums">{calculateGfast(erhebung)}</span>
-            {erhebung.startzeit_untersuchung ? (
-              <>
-                <span className="mx-2 text-muted">·</span>
-                <ExamElapsedClock
-                  startAt={erhebung.startzeit_untersuchung}
-                  endAt={erhebung.endzeit_untersuchung}
-                  className="tabular-nums"
-                />
-              </>
-            ) : null}
-          </p>
+          <div>
+            <p className="text-sm font-semibold leading-tight md:text-2xl">
+              NIHSS{" "}
+              <span className="tabular-nums">{calculateNihss(erhebung)}</span>
+              <span className="mx-2 text-muted">·</span>
+              G-FAST{" "}
+              <span className="tabular-nums">{calculateGfast(erhebung)}</span>
+              {erhebung.startzeit_untersuchung ? (
+                <>
+                  <span className="mx-2 text-muted">·</span>
+                  <ExamElapsedClock
+                    startAt={erhebung.startzeit_untersuchung}
+                    endAt={erhebung.endzeit_untersuchung}
+                    className="tabular-nums"
+                    title="Untersuchungsdauer"
+                  />
+                </>
+              ) : null}
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-muted md:text-sm">
+              Start→Stroke{" "}
+              <DurationValue
+                startAt={erhebung.startzeit_untersuchung}
+                endAt={durations.strokeAt}
+                title="Dauer Start bis Stroke-Entscheidung"
+              />
+              <span className="mx-2">·</span>
+              Stroke→Lyse{" "}
+              <DurationValue
+                startAt={durations.strokeAt}
+                endAt={durations.lyseAt}
+                title="Dauer Stroke- bis Lyse-Entscheidung"
+              />
+            </p>
+          </div>
           <div className="text-right text-xs text-muted">
             <p className="hidden md:inline">
               Erhebung: {erhebung.erhebungs_id}

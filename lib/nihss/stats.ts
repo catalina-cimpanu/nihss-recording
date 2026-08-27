@@ -1,5 +1,6 @@
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 import { NIHSS_FIELDS } from "@/lib/nihss/config";
+import { formatAverageElapsedClock, getDecisionDurations } from "@/lib/nihss/duration";
 import { getMissingNihssFields, hasInvalidAtaxiaLimbCount } from "@/lib/nihss/validation-exam";
 
 export type DurationBucket = {
@@ -19,6 +20,9 @@ export type DashboardStats = {
   averageNihss: number | null;
   medianNihss: number | null;
   averageGfast: number | null;
+  averageExamDurationLabel: string;
+  averageStartToStrokeLabel: string;
+  averageStrokeToLyseLabel: string;
   strokeJa: number;
   strokeKein: number;
   strokeOffen: number;
@@ -101,6 +105,21 @@ export function buildDashboardStats(rows: ErhebungRow[]): DashboardStats {
     averageNihss: average(rows.map((row) => row.nihss)),
     medianNihss: median(rows.map((row) => row.nihss)),
     averageGfast: average(rows.map((row) => row.g_fast)),
+    averageExamDurationLabel: formatAverageElapsedClock(
+      rows
+        .map((row) => getDecisionDurations(row).dauer_untersuchung_ms)
+        .filter((value): value is number => value != null),
+    ),
+    averageStartToStrokeLabel: formatAverageElapsedClock(
+      rows
+        .map((row) => getDecisionDurations(row).dauer_start_zu_stroke_ms)
+        .filter((value): value is number => value != null),
+    ),
+    averageStrokeToLyseLabel: formatAverageElapsedClock(
+      rows
+        .map((row) => getDecisionDurations(row).dauer_stroke_zu_lyse_ms)
+        .filter((value): value is number => value != null),
+    ),
     strokeJa: rows.filter((row) => row.stroke_status === "Ja").length,
     strokeKein: rows.filter((row) => row.stroke_status === "Kein Stroke").length,
     strokeOffen: rows.filter((row) => row.stroke_status === "nicht entschieden")

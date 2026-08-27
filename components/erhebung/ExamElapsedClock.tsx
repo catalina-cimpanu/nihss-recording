@@ -7,12 +7,14 @@ type ExamElapsedClockProps = {
   startAt: string | null;
   endAt?: string | null;
   className?: string;
+  title?: string;
 };
 
 export default function ExamElapsedClock({
   startAt,
   endAt,
   className,
+  title = "Seit Untersuchungsstart",
 }: ExamElapsedClockProps) {
   const [now, setNow] = useState(() => Date.now());
 
@@ -38,7 +40,7 @@ export default function ExamElapsedClock({
   const elapsedMs = Number.isFinite(endMs) ? endMs - startMs : 0;
 
   return (
-    <span className={className} title="Seit Untersuchungsstart">
+    <span className={className} title={title}>
       {formatElapsedClock(elapsedMs)}
     </span>
   );
