@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import FieldOptions from "@/components/erhebung/FieldOptions";
+import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
 import StickyScoreBar from "@/components/erhebung/StickyScoreBar";
 import { persistErhebungAndEreignisse } from "@/lib/db/erhebungen";
 import {
@@ -401,20 +402,29 @@ export default function ErhebungWorkspace({
           );
         })}
 
-        <details className="rounded-xl border border-border bg-surface p-3">
-          <summary className="cursor-pointer text-lg font-semibold">
-            Zeitlinie
-          </summary>
-          <div className="mt-2">
-            {erhebung.timeline ? (
-              <pre className="overflow-x-auto whitespace-pre-wrap text-sm text-muted">
-                {erhebung.timeline}
-              </pre>
-            ) : (
-              <p className="text-sm text-muted">Noch keine Einträge.</p>
-            )}
+        <section className="space-y-3 rounded-xl border border-border bg-surface p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold">Zeitlinie</h2>
+            <KlickprotokollExportButton
+              erhebungId={erhebung.id}
+              erhebungsId={erhebung.erhebungs_id}
+            />
           </div>
-        </details>
+          <details>
+            <summary className="cursor-pointer text-sm font-semibold">
+              Einträge anzeigen
+            </summary>
+            <div className="mt-2">
+              {erhebung.timeline ? (
+                <pre className="overflow-x-auto whitespace-pre-wrap text-sm text-muted">
+                  {erhebung.timeline}
+                </pre>
+              ) : (
+                <p className="text-sm text-muted">Noch keine Einträge.</p>
+              )}
+            </div>
+          </details>
+        </section>
       </div>
 
       {isSaving ? (

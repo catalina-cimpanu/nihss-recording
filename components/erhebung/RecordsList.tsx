@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { ErhebungListItem } from "@/lib/db/erhebungen";
 import { softDeleteErhebung } from "@/lib/db/erhebungen";
 import { formatBerlinDateTime } from "@/lib/nihss/timeline";
+import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
 
 const DELETE_CONFIRMATION =
   "Diese Erhebung wirklich löschen? Sie wird ausgeblendet, bleibt aber in der Datenbank erhalten.";
@@ -16,21 +17,28 @@ type RecordsListProps = {
 
 function RecordActions({
   id,
+  erhebungsId,
   pendingId,
   onDelete,
 }: {
   id: string;
+  erhebungsId: string;
   pendingId: string | null;
   onDelete: (id: string) => void;
 }) {
   return (
-    <div className="flex gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       <Link
         href={`/records/${id}`}
         className="font-semibold text-tempis-blue-darker underline"
       >
         Öffnen
       </Link>
+      <KlickprotokollExportButton
+        erhebungId={id}
+        erhebungsId={erhebungsId}
+        variant="link"
+      />
       <button
         type="button"
         onClick={() => onDelete(id)}
@@ -108,6 +116,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
             </p>
             <RecordActions
               id={row.id}
+              erhebungsId={row.erhebungs_id}
               pendingId={pendingId}
               onDelete={confirmDelete}
             />
@@ -152,6 +161,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
                 <td className="whitespace-nowrap px-3 py-2">
                   <RecordActions
                     id={row.id}
+                    erhebungsId={row.erhebungs_id}
                     pendingId={pendingId}
                     onDelete={confirmDelete}
                   />
