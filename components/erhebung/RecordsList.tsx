@@ -8,6 +8,7 @@ import { softDeleteErhebung } from "@/lib/db/erhebungen";
 import { formatBerlinDateTime } from "@/lib/nihss/timeline";
 import ExamElapsedClock from "@/components/erhebung/ExamElapsedClock";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
+import { getDecisionClocks } from "@/lib/nihss/duration";
 
 const DELETE_CONFIRMATION =
   "Diese Erhebung wirklich löschen? Sie wird ausgeblendet, bleibt aber in der Datenbank erhalten.";
@@ -33,6 +34,19 @@ function RecordDuration({
       title={title}
     />
   );
+}
+
+function clocksFor(row: ErhebungListItem) {
+  return getDecisionClocks({
+    startzeit_untersuchung: row.startzeit_untersuchung,
+    endzeit_untersuchung: row.endzeit_untersuchung,
+    stroke_status: row.stroke_status,
+    stroke_initial_at: row.stroke_entscheidung_at,
+    stroke_last_at: row.stroke_entscheidung_at,
+    lyse_status: row.lyse_status,
+    lyse_initial_at: row.lyse_entscheidung_at,
+    lyse_last_at: row.lyse_entscheidung_at,
+  });
 }
 
 type RecordsListProps = {
@@ -122,7 +136,9 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
       ) : null}
 
       <ul className="space-y-3 md:hidden">
-        {rows.map((row) => (
+        {rows.map((row) => {
+          const clocks = clocksFor(row);
+          return (
           <li
             key={row.id}
             className="space-y-2 rounded-xl border border-border bg-surface p-3"
@@ -143,15 +159,15 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
             <p className="text-sm">
               Start→Stroke{" "}
               <RecordDuration
-                startAt={row.startzeit_untersuchung}
-                endAt={row.stroke_entscheidung_at}
+                startAt={clocks.startToStroke.startAt}
+                endAt={clocks.startToStroke.endAt}
                 title="Dauer Start bis Stroke-Entscheidung"
               />
               {" · "}
               Stroke→Lyse{" "}
               <RecordDuration
-                startAt={row.stroke_entscheidung_at}
-                endAt={row.lyse_entscheidung_at}
+                startAt={clocks.strokeToLyse.startAt}
+                endAt={clocks.strokeToLyse.endAt}
                 title="Dauer Stroke- bis Lyse-Entscheidung"
               />
             </p>
@@ -165,7 +181,8 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
               onDelete={confirmDelete}
             />
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <div className="hidden overflow-x-auto rounded-xl border border-border bg-surface md:block">
@@ -187,7 +204,9 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row) => {
+              const clocks = clocksFor(row);
+              return (
               <tr key={row.id} className="border-t border-border">
                 <td className="whitespace-nowrap px-3 py-2 font-medium">
                   {row.erhebungs_id}
@@ -208,15 +227,15 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   <RecordDuration
-                    startAt={row.startzeit_untersuchung}
-                    endAt={row.stroke_entscheidung_at}
+                    startAt={clocks.startToStroke.startAt}
+                    endAt={clocks.startToStroke.endAt}
                     title="Dauer Start bis Stroke-Entscheidung"
                   />
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   <RecordDuration
-                    startAt={row.stroke_entscheidung_at}
-                    endAt={row.lyse_entscheidung_at}
+                    startAt={clocks.strokeToLyse.startAt}
+                    endAt={clocks.strokeToLyse.endAt}
                     title="Dauer Stroke- bis Lyse-Entscheidung"
                   />
                 </td>
@@ -235,7 +254,8 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
                   />
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

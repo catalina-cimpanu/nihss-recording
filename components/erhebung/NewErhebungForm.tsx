@@ -2,11 +2,24 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import OptionButton from "@/components/erhebung/OptionButton";
+import optionStyles from "@/components/nihss_items/nihssOptions.module.css";
 import { createErhebung } from "@/lib/db/erhebungen";
 import { isSupabaseConfigured } from "@/lib/env";
+import type { NihssOption } from "@/lib/nihss/config";
 import { untersuchungstypSchema } from "@/lib/nihss/validation";
 import { createErhebungsId } from "@/lib/time/berlin";
 import type { Untersuchungstyp } from "@/lib/nihss/types";
+
+const UNTERSUCHUNGSTYP_OPTIONS: NihssOption[] = [
+  { value: "Test", label: "Test", score: null, color: "stroke" },
+  {
+    value: "Echter Patient",
+    label: "Echter Patient",
+    score: null,
+    color: "stroke",
+  },
+];
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
@@ -55,31 +68,27 @@ export default function NewErhebungForm() {
     }
   }
 
+  const frameClass = untersuchungstyp
+    ? optionStyles.fieldFrameSide
+    : optionStyles.fieldFrameEmpty;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-semibold">Untersuchungstyp</legend>
-        <label className="flex min-h-11 items-center gap-2 text-sm">
-          <input
-            type="radio"
-            name="untersuchungstyp"
-            value="Test"
-            checked={untersuchungstyp === "Test"}
-            onChange={() => setUntersuchungstyp("Test")}
-          />
-          Test
-        </label>
-        <label className="flex min-h-11 items-center gap-2 text-sm">
-          <input
-            type="radio"
-            name="untersuchungstyp"
-            value="Echter Patient"
-            checked={untersuchungstyp === "Echter Patient"}
-            onChange={() => setUntersuchungstyp("Echter Patient")}
-          />
-          Echter Patient
-        </label>
-      </fieldset>
+      <div className={`space-y-2 ${optionStyles.fieldFrame} ${frameClass}`}>
+        <h2 className="text-sm font-semibold">Untersuchungstyp</h2>
+        <div className="flex flex-col gap-2" role="radiogroup" aria-label="Untersuchungstyp">
+          {UNTERSUCHUNGSTYP_OPTIONS.map((option) => (
+            <OptionButton
+              key={option.value}
+              option={option}
+              selected={untersuchungstyp === option.value}
+              onSelect={() =>
+                setUntersuchungstyp(option.value as Untersuchungstyp)
+              }
+            />
+          ))}
+        </div>
+      </div>
 
       {error ? (
         <p className="rounded-lg border border-tempis-signal/30 bg-surface px-3 py-2 text-sm text-tempis-signal">

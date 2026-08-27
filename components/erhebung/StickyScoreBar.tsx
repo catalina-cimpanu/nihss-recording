@@ -3,7 +3,7 @@
 import ExamElapsedClock from "@/components/erhebung/ExamElapsedClock";
 import FieldOptions from "@/components/erhebung/FieldOptions";
 import { LYSE_FIELD, STROKE_FIELD, type ClickableField } from "@/lib/nihss/config";
-import { getDecisionDurations } from "@/lib/nihss/duration";
+import { getDecisionClocks } from "@/lib/nihss/duration";
 import { calculateGfast, calculateNihss } from "@/lib/nihss/scoring";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
@@ -43,7 +43,7 @@ export default function StickyScoreBar({
   incompleteCount,
   onSelect,
 }: StickyScoreBarProps) {
-  const durations = getDecisionDurations(erhebung);
+  const clocks = getDecisionClocks(erhebung);
 
   return (
     <div className="border-b border-border bg-surface/95 px-2 pt-1.5 pb-2.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/90 md:px-3 md:py-2">
@@ -68,18 +68,18 @@ export default function StickyScoreBar({
                 </>
               ) : null}
             </p>
-            <p className="mt-0.5 text-xs font-semibold text-muted md:text-sm">
+            <p className="mt-0.5 hidden text-xs font-semibold text-muted md:block md:text-sm">
               Start→Stroke{" "}
               <DurationValue
-                startAt={erhebung.startzeit_untersuchung}
-                endAt={durations.strokeAt}
+                startAt={clocks.startToStroke.startAt}
+                endAt={clocks.startToStroke.endAt}
                 title="Dauer Start bis Stroke-Entscheidung"
               />
               <span className="mx-2">·</span>
               Stroke→Lyse{" "}
               <DurationValue
-                startAt={durations.strokeAt}
-                endAt={durations.lyseAt}
+                startAt={clocks.strokeToLyse.startAt}
+                endAt={clocks.strokeToLyse.endAt}
                 title="Dauer Stroke- bis Lyse-Entscheidung"
               />
             </p>

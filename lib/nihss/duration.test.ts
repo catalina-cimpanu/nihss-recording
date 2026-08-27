@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   formatAverageElapsedClock,
   formatElapsedClock,
+  getDecisionClocks,
   getDecisionDurations,
   type DurationInput,
 } from "@/lib/nihss/duration";
@@ -101,5 +102,67 @@ describe("getDecisionDurations", () => {
 
     assert.equal(result.dauer_start_zu_stroke_ms, 8 * 60_000);
     assert.equal(result.dauer_stroke_zu_lyse_ms, null);
+  });
+});
+
+describe("getDecisionClocks", () => {
+  it("keeps undecided stroke and lyse clocks running while the exam is open", () => {
+    const clocks = getDecisionClocks(
+      state({
+        startzeit_untersuchung: "2026-08-27T10:00:00.000Z",
+        stroke_status: "nicht entschieden",
+        lyse_status: "nicht entschieden",
+      }),
+    );
+
+    assert.deepEqual(clocks.startToStroke, {
+      startAt: "2026-08-27T10:00:00.000Z",
+      endAt: null,
+    });
+    assert.deepEqual(clocks.strokeToLyse, {
+      startAt: null,
+      endAt: null,
+    });
+  });
+
+  it("cancels undecided stroke and lyse clocks when the exam is closed", () => {
+    const clocks = getDecisionClocks(
+      state({
+        startzeit_untersuchung: "2026-08-27T10:00:00.000Z",
+        endzeit_untersuchung: "2026-08-27T10:12:00.000Z",
+        stroke_status: "nicht entschieden",
+        lyse_status: "nicht entschieden",
+      }),
+    );
+
+    assert.deepEqual(clocks.startToStroke, {
+      startAt: null,
+      endAt: null,
+    });
+    assert.deepEqual(clocks.strokeToLyse, {
+      startAt: null,
+      endAt: null,
+    });
+  });
+
+  it("cancels only the lyse clock when the exam closes with stroke decided", () => {
+    const clocks = getDecisionClocks(
+      state({
+        startzeit_untersuchung: "2026-08-27T10:00:00.000Z",
+        endzeit_untersuchung: "2026-08-27T10:12:00.000Z",
+        stroke_status: "Ja",
+        stroke_last_at: "2026-08-27T10:09:00.000Z",
+        lyse_status: "nicht entschieden",
+      }),
+    );
+
+    assert.deepEqual(clocks.startToStroke, {
+      startAt: "2026-08-27T10:00:00.000Z",
+      endAt: "2026-08-27T10:09:00.000Z",
+    });
+    assert.deepEqual(clocks.strokeToLyse, {
+      startAt: null,
+      endAt: null,
+    });
   });
 });

@@ -20,6 +20,16 @@ export type DecisionDurations = {
   dauer_stroke_zu_lyse_ms: number | null;
 };
 
+export type DecisionClock = {
+  startAt: string | null;
+  endAt: string | null;
+};
+
+export type DecisionClocks = {
+  startToStroke: DecisionClock;
+  strokeToLyse: DecisionClock;
+};
+
 export function formatElapsedClock(durationMs: number): string {
   if (!Number.isFinite(durationMs) || durationMs < 0) {
     return "0:00";
@@ -85,5 +95,22 @@ export function getDecisionDurations(row: DurationInput): DecisionDurations {
     dauer_untersuchung_ms: positiveDiffMs(startMs, endMs),
     dauer_start_zu_stroke_ms: positiveDiffMs(startMs, strokeMs),
     dauer_stroke_zu_lyse_ms: positiveDiffMs(strokeMs, lyseMs),
+  };
+}
+
+export function getDecisionClocks(row: DurationInput): DecisionClocks {
+  const { strokeAt, lyseAt } = getDecisionDurations(row);
+  const startAt = row.startzeit_untersuchung;
+  const examEnded = Boolean(row.endzeit_untersuchung);
+
+  return {
+    startToStroke: {
+      startAt: startAt && (!examEnded || strokeAt) ? startAt : null,
+      endAt: strokeAt,
+    },
+    strokeToLyse: {
+      startAt: strokeAt && (!examEnded || lyseAt) ? strokeAt : null,
+      endAt: lyseAt,
+    },
   };
 }
