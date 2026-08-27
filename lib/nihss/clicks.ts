@@ -1,12 +1,14 @@
 import type { EreignisInsert, ErhebungRow } from "@/lib/supabase/database.types";
 import {
   MULTI_VALUE_SEPARATOR,
+  getFieldByKey,
   parseStoredValues,
   type ClickableField,
   type NihssOption,
 } from "@/lib/nihss/config";
 import { calculateGfast, calculateNihss } from "@/lib/nihss/scoring";
 import { appendTimelineLine, formatTimelineLine } from "@/lib/nihss/timeline";
+import { hasRealAtaxiaLimbFinding } from "@/lib/nihss/validation-exam";
 
 function setColumn<K extends keyof ErhebungRow>(
   row: ErhebungRow,
@@ -121,6 +123,43 @@ export function getNormalOption(field: ClickableField): NihssOption | undefined 
   );
 }
 
+function isAlreadyNormal(field: ClickableField, erhebung: ErhebungRow): boolean {
+  const option = getNormalOption(field);
+  if (!option) {
+    return false;
+  }
+
+  if (field.selection === "multiple") {
+    const values = parseStoredValues(erhebung[field.valueColumn]);
+    return values.length === 1 && values[0] === option.value;
+  }
+
+  return erhebung[field.valueColumn] === option.value;
+}
+
+function ataxiaFieldsToNormalize(erhebung: ErhebungRow): ClickableField[] {
+  if (hasRealAtaxiaLimbFinding(erhebung)) {
+    return [];
+  }
+
+  const fields: ClickableField[] = [];
+  const item7 = getFieldByKey("nihss_7");
+  const right = getFieldByKey("ataxie_rechts");
+  const left = getFieldByKey("ataxie_links");
+
+  if (item7 && erhebung.punkte_7 !== 0) {
+    fields.push(item7);
+  }
+  if (right) {
+    fields.push(right);
+  }
+  if (left) {
+    fields.push(left);
+  }
+
+  return fields;
+}
+
 export function applyMissingFieldsAsNormal(args: {
   erhebung: ErhebungRow;
   missingFields: ClickableField[];
@@ -128,8 +167,17 @@ export function applyMissingFieldsAsNormal(args: {
 }): { erhebung: ErhebungRow; ereignisse: EreignisInsert[] } {
   let current = args.erhebung;
   const ereignisse: EreignisInsert[] = [];
+  const seen = new Set<string>();
 
-  for (const field of args.missingFields) {
+  for (const field of [
+    ...args.missingFields,
+    ...ataxiaFieldsToNormalize(args.erhebung),
+  ]) {
+    if (seen.has(field.key) || isAlreadyNormal(field, current)) {
+      continue;
+    }
+    seen.add(field.key);
+
     const option = getNormalOption(field);
     if (!option) {
       continue;

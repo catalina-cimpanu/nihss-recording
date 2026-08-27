@@ -28,6 +28,7 @@
 
 .optionRow .optionButton {
   width: auto;
+  min-height: 2.75rem;
   flex: 1 1 8rem;
   text-align: center;
 }

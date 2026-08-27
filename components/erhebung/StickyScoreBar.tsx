@@ -31,29 +31,31 @@ export default function StickyScoreBar({
             {incompleteCount > 0 ? ` · unvollständig (${incompleteCount})` : ""}
           </p>
         </div>
-        <div>
-          <p className="mb-1 text-xs font-semibold text-tempis-blue-darker">
-            Stroke (Dokumentation)
-          </p>
-          <FieldOptions
-            field={STROKE_FIELD}
-            erhebung={erhebung}
-            readOnly={readOnly}
-            compact
-            onSelect={onSelect}
-          />
-        </div>
-        <div>
-          <p className="mb-1 text-xs font-semibold text-tempis-signal">
-            Lyse (Dokumentation)
-          </p>
-          <FieldOptions
-            field={LYSE_FIELD}
-            erhebung={erhebung}
-            readOnly={readOnly}
-            compact
-            onSelect={onSelect}
-          />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div>
+            <p className="mb-1 text-xs font-semibold text-tempis-blue-darker">
+              Stroke (Dokumentation)
+            </p>
+            <FieldOptions
+              field={STROKE_FIELD}
+              erhebung={erhebung}
+              readOnly={readOnly}
+              compact
+              onSelect={onSelect}
+            />
+          </div>
+          <div>
+            <p className="mb-1 text-xs font-semibold text-tempis-signal">
+              Lyse (Dokumentation)
+            </p>
+            <FieldOptions
+              field={LYSE_FIELD}
+              erhebung={erhebung}
+              readOnly={readOnly}
+              compact
+              onSelect={onSelect}
+            />
+          </div>
         </div>
       </div>
     </div>

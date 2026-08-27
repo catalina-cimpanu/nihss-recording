@@ -14,6 +14,35 @@ type RecordsListProps = {
   initialRows: ErhebungListItem[];
 };
 
+function RecordActions({
+  id,
+  pendingId,
+  onDelete,
+}: {
+  id: string;
+  pendingId: string | null;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <div className="flex gap-3">
+      <Link
+        href={`/records/${id}`}
+        className="font-semibold text-tempis-blue-darker underline"
+      >
+        Öffnen
+      </Link>
+      <button
+        type="button"
+        onClick={() => onDelete(id)}
+        disabled={pendingId === id}
+        className="font-semibold text-tempis-signal disabled:opacity-60"
+      >
+        Löschen
+      </button>
+    </div>
+  );
+}
+
 export default function RecordsList({ initialRows }: RecordsListProps) {
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
@@ -59,7 +88,34 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
       {error ? (
         <p className="text-sm text-tempis-signal">{error}</p>
       ) : null}
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+
+      <ul className="space-y-3 md:hidden">
+        {rows.map((row) => (
+          <li
+            key={row.id}
+            className="space-y-2 rounded-xl border border-border bg-surface p-3"
+          >
+            <p className="font-semibold">{row.erhebungs_id}</p>
+            <p className="text-sm text-muted">
+              {formatBerlinDateTime(new Date(row.created_at))} ·{" "}
+              {row.untersuchungstyp} · {row.status}
+            </p>
+            <p className="text-sm">
+              NIHSS {row.nihss} · G-FAST {row.g_fast}
+            </p>
+            <p className="text-sm">
+              Stroke: {row.stroke_status} · Lyse: {row.lyse_status}
+            </p>
+            <RecordActions
+              id={row.id}
+              pendingId={pendingId}
+              onDelete={confirmDelete}
+            />
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-xl border border-border bg-surface md:block">
         <table className="min-w-full text-left text-sm">
           <thead className="bg-tempis-ice/60 text-xs uppercase tracking-wide text-muted">
             <tr>
@@ -94,22 +150,11 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">{row.lyse_status}</td>
                 <td className="whitespace-nowrap px-3 py-2">
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/records/${row.id}`}
-                      className="font-semibold text-tempis-blue-darker underline"
-                    >
-                      Öffnen
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => confirmDelete(row.id)}
-                      disabled={pendingId === row.id}
-                      className="font-semibold text-tempis-signal disabled:opacity-60"
-                    >
-                      Löschen
-                    </button>
-                  </div>
+                  <RecordActions
+                    id={row.id}
+                    pendingId={pendingId}
+                    onDelete={confirmDelete}
+                  />
                 </td>
               </tr>
             ))}

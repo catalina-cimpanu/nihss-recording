@@ -1,6 +1,6 @@
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 import { NIHSS_FIELDS } from "@/lib/nihss/config";
-import { getMissingNihssFields } from "@/lib/nihss/validation-exam";
+import { getMissingNihssFields, hasInvalidAtaxiaLimbCount } from "@/lib/nihss/validation-exam";
 
 export type DurationBucket = {
   label: string;
@@ -110,7 +110,9 @@ export function buildDashboardStats(rows: ErhebungRow[]): DashboardStats {
     lyseOffen: rows.filter((row) => row.lyse_status === "nicht entschieden")
       .length,
     incompleteCount: rows.filter(
-      (row) => getMissingNihssFields(row).length > 0,
+      (row) =>
+        getMissingNihssFields(row).length > 0 ||
+        hasInvalidAtaxiaLimbCount(row),
     ).length,
     abnormalFrequencies: NIHSS_FIELDS.filter(
       (field) => field.contributesToNihss && field.scoreColumn,

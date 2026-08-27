@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import FieldOptions from "@/components/erhebung/FieldOptions";
 import StickyScoreBar from "@/components/erhebung/StickyScoreBar";
 import { persistErhebungAndEreignisse } from "@/lib/db/erhebungen";
@@ -19,9 +19,15 @@ import {
 } from "@/lib/nihss/clicks";
 import { formatBerlinTime } from "@/lib/nihss/timeline";
 import {
+  getAtaxiaIncompleteLabel,
   getDocumentationWarnings,
   getMissingNihssFields,
+  getUndecidedStrokeLyseLabels,
+  hasAtaxiaScoreWithoutLimbFinding,
+  hasInvalidAtaxiaLimbCount,
+  hasLyseJaWithKeinStroke,
   isExamLongerThan60Minutes,
+  isRapidRepeatClick,
 } from "@/lib/nihss/validation-exam";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
@@ -33,6 +39,51 @@ function findOption(field: ClickableField, value: string) {
   return field.options.find((option) => option.value === value);
 }
 
+function closeDialogMessage(args: {
+  isIncomplete: boolean;
+  missingFieldLabels: string[];
+  ataxiaIncompleteLabel: string | null;
+  undecidedStrokeLyse: string[];
+  lyseJaWithKeinStroke: boolean;
+  longerThan60Minutes: boolean;
+  needsCloseAnyway: boolean;
+}): string {
+  const parts: string[] = [];
+
+  if (args.isIncomplete) {
+    parts.push(
+      `Die Erhebung ist unvollständig. Fehlende NIHSS-Felder: ${[
+        ...args.missingFieldLabels,
+        ...(args.ataxiaIncompleteLabel ? [args.ataxiaIncompleteLabel] : []),
+      ].join(", ")}.`,
+    );
+  }
+
+  if (args.lyseJaWithKeinStroke) {
+    parts.push("Kein Stroke und Lyse Ja gehören nicht zusammen.");
+  }
+
+  if (args.undecidedStrokeLyse.length === 2) {
+    parts.push("Stroke und Lyse sind noch nicht entschieden.");
+  } else if (args.undecidedStrokeLyse.length === 1) {
+    parts.push(`${args.undecidedStrokeLyse[0]} ist noch nicht entschieden.`);
+  }
+
+  if (args.longerThan60Minutes) {
+    parts.push("Die Untersuchungsdauer beträgt mehr als 60 Minuten.");
+  }
+
+  if (!args.needsCloseAnyway) {
+    return `Untersuchung beenden und als abgeschlossen markieren?${
+      args.longerThan60Minutes
+        ? " Die Untersuchungsdauer beträgt mehr als 60 Minuten."
+        : ""
+    }`;
+  }
+
+  return `${parts.join(" ")} Trotzdem abschließen?`;
+}
+
 export default function ErhebungWorkspace({
   initialErhebung,
 }: ErhebungWorkspaceProps) {
@@ -40,16 +91,46 @@ export default function ErhebungWorkspace({
   const [error, setError] = useState<string | null>(null);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+  const [rapidClickWarning, setRapidClickWarning] = useState<string | null>(
+    null,
+  );
+  const lastClickRef = useRef<{ fieldKey: string; at: number } | null>(null);
 
   const readOnly = erhebung.status === "abgeschlossen";
   const missingFields = useMemo(
     () => getMissingNihssFields(erhebung),
     [erhebung],
   );
-  const warnings = useMemo(
-    () => getDocumentationWarnings(erhebung),
-    [erhebung],
-  );
+  const ataxiaWithoutLimb = hasAtaxiaScoreWithoutLimbFinding(erhebung);
+  const ataxiaIncompleteLabel = getAtaxiaIncompleteLabel(erhebung);
+  const invalidAtaxiaLimbs = hasInvalidAtaxiaLimbCount(erhebung);
+  const canNormalizeMissing = missingFields.length > 0 || ataxiaWithoutLimb;
+  const isIncomplete = missingFields.length > 0 || invalidAtaxiaLimbs;
+  const incompleteCount =
+    missingFields.length + (invalidAtaxiaLimbs ? 1 : 0);
+  const undecidedStrokeLyse = getUndecidedStrokeLyseLabels(erhebung);
+  const lyseJaWithKeinStroke = hasLyseJaWithKeinStroke(erhebung);
+  const needsCloseAnyway =
+    isIncomplete ||
+    undecidedStrokeLyse.length > 0 ||
+    lyseJaWithKeinStroke;
+  const warnings = useMemo(() => {
+    const list = getDocumentationWarnings(erhebung, now);
+    if (rapidClickWarning) {
+      list.push(rapidClickWarning);
+    }
+    return list;
+  }, [erhebung, now, rapidClickWarning]);
+
+  useEffect(() => {
+    if (readOnly || !erhebung.startzeit_untersuchung) {
+      return;
+    }
+
+    const id = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(id);
+  }, [readOnly, erhebung.startzeit_untersuchung]);
 
   async function persist(
     next: ErhebungRow,
@@ -80,6 +161,16 @@ export default function ErhebungWorkspace({
     if (!option) {
       return;
     }
+
+    const clickedAt = Date.now();
+    if (isRapidRepeatClick(lastClickRef.current, field.key, clickedAt)) {
+      setRapidClickWarning(
+        `Sehr schnelle wiederholte Klicks bei ${field.label}. Jeder Klick wird gespeichert.`,
+      );
+    } else {
+      setRapidClickWarning(null);
+    }
+    lastClickRef.current = { fieldKey: field.key, at: clickedAt };
 
     const result = applyFieldClick({
       erhebung,
@@ -120,10 +211,20 @@ export default function ErhebungWorkspace({
   }
 
   async function confirmStop() {
+    const stopAt = new Date();
+    if (
+      erhebung.startzeit_untersuchung &&
+      stopAt.getTime() < new Date(erhebung.startzeit_untersuchung).getTime()
+    ) {
+      setCloseDialogOpen(false);
+      setError("Die Endzeit wäre vor der Startzeit. Bitte Uhrzeit prüfen.");
+      return;
+    }
+
     setCloseDialogOpen(false);
     const result = applyLifecycleEvent({
       erhebung,
-      now: new Date(),
+      now: stopAt,
       kind: "stop",
     });
     await persist(result.erhebung, [result.ereignis]);
@@ -150,7 +251,7 @@ export default function ErhebungWorkspace({
       <StickyScoreBar
         erhebung={erhebung}
         readOnly={readOnly}
-        incompleteCount={missingFields.length}
+        incompleteCount={incompleteCount}
         onSelect={handleSelect}
       />
 
@@ -209,14 +310,15 @@ export default function ErhebungWorkspace({
         {closeDialogOpen ? (
           <div className="space-y-3 rounded-xl border border-tempis-orange bg-surface p-3">
             <p className="text-sm">
-              {missingFields.length > 0
-                ? `Die Erhebung ist unvollständig. Fehlende NIHSS-Felder: ${missingFields
-                    .map((field) => field.label)
-                    .join(", ")}. Trotzdem abschließen?`
-                : "Untersuchung beenden und als abgeschlossen markieren?"}
-              {isExamLongerThan60Minutes(erhebung)
-                ? " Die Untersuchungsdauer beträgt mehr als 60 Minuten."
-                : ""}
+              {closeDialogMessage({
+                isIncomplete,
+                missingFieldLabels: missingFields.map((field) => field.label),
+                ataxiaIncompleteLabel,
+                undecidedStrokeLyse,
+                lyseJaWithKeinStroke,
+                longerThan60Minutes: isExamLongerThan60Minutes(erhebung),
+                needsCloseAnyway,
+              })}
             </p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -224,11 +326,9 @@ export default function ErhebungWorkspace({
                 onClick={confirmStop}
                 className="rounded-lg bg-tempis-signal px-4 py-2 font-semibold text-white"
               >
-                {missingFields.length > 0
-                  ? "Trotzdem abschließen"
-                  : "Abschließen"}
+                {needsCloseAnyway ? "Trotzdem abschließen" : "Abschließen"}
               </button>
-              {missingFields.length > 0 ? (
+              {canNormalizeMissing ? (
                 <button
                   type="button"
                   onClick={markMissingAsNormal}
