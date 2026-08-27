@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import ExamViewToggle from "@/components/erhebung/ExamViewToggle";
 import FieldOptions from "@/components/erhebung/FieldOptions";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
 import ScrollToTopButton from "@/components/erhebung/ScrollToTopButton";
 import StickyScoreBar from "@/components/erhebung/StickyScoreBar";
+import { useExamViewMode } from "@/components/erhebung/useExamViewMode";
+import { useStickyOptionHeight } from "@/components/erhebung/useStickyOptionHeight";
 import WarningToasts, {
   WARNING_TOAST_MS,
   type WarningToast,
@@ -122,6 +125,8 @@ export default function ErhebungWorkspace({
   const [isSaving, setIsSaving] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [toasts, setToasts] = useState<WarningToast[]>([]);
+  const { mode: viewMode, setMode: setViewMode } = useExamViewMode();
+  const stickyOptionHeight = useStickyOptionHeight();
   const lastClickRef = useRef<{ fieldKey: string; at: number } | null>(null);
   const toastIdRef = useRef(0);
   const toastTimersRef = useRef<Map<number, number>>(new Map());
@@ -331,9 +336,9 @@ export default function ErhebungWorkspace({
       </div>
 
       <div
-        className={`mx-auto max-w-4xl space-y-4 px-4 py-4 ${
-          readOnly ? "pb-4" : "pb-28"
-        }`}
+        className={`mx-auto max-w-4xl px-4 py-4 ${
+          viewMode === "compact" ? "space-y-3" : "space-y-4"
+        } ${readOnly ? "pb-4" : "pb-28"}`}
       >
         {readOnly ? (
           <p className="rounded-lg bg-tempis-ice px-3 py-2 text-sm">
@@ -425,7 +430,9 @@ export default function ErhebungWorkspace({
           return (
             <section
               key={section.title}
-              className="space-y-3 rounded-xl border border-border bg-surface p-3"
+              className={`rounded-xl border border-border bg-surface ${
+                viewMode === "compact" ? "space-y-2 p-2.5" : "space-y-3 p-3"
+              }`}
             >
               <div>
                 <h2 className="text-lg font-semibold">{section.title}</h2>
@@ -452,6 +459,7 @@ export default function ErhebungWorkspace({
                       field={field}
                       erhebung={erhebung}
                       readOnly={readOnly}
+                      viewMode={viewMode}
                       compact={
                         field.selection === "multiple" ||
                         field.options.every((option) => option.color === "side")
@@ -496,11 +504,25 @@ export default function ErhebungWorkspace({
             <ScrollToTopButton variant="docked" />
           </div>
           <div className="border-t border-border bg-surface px-4 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.08)] md:pt-2">
-            <div className="mx-auto max-w-4xl">
+            <div className="mx-auto flex max-w-4xl items-center gap-2">
+              <ExamViewToggle
+                value={viewMode}
+                onChange={setViewMode}
+                buttonHeight={stickyOptionHeight}
+              />
               <button
                 type="button"
                 onClick={handleStopRequest}
-                className="flex w-full items-center justify-center rounded-[0.4rem] bg-tempis-signal px-4 py-1.5 text-sm font-semibold text-white hover:bg-tempis-signal-dark md:min-h-[2.75rem] md:px-2 md:py-[0.45rem] md:text-[0.85rem]"
+                style={
+                  stickyOptionHeight != null
+                    ? {
+                        height: stickyOptionHeight,
+                        minHeight: stickyOptionHeight,
+                        boxSizing: "border-box",
+                      }
+                    : undefined
+                }
+                className={`${optionStyles.optionButton} ${optionStyles.stopExamButton} ${optionStyles.stopExam} flex min-w-0 flex-1 items-center justify-center`}
               >
                 Untersuchung beenden
               </button>

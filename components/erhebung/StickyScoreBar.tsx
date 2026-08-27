@@ -100,7 +100,7 @@ export default function StickyScoreBar({
               <span className="md:hidden">Stroke</span>
               <span className="hidden md:inline">Stroke (Dokumentation)</span>
             </p>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1" data-sticky-option-row>
               <FieldOptions
                 field={STROKE_FIELD}
                 erhebung={erhebung}
@@ -116,7 +116,7 @@ export default function StickyScoreBar({
               <span className="md:hidden">Lyse</span>
               <span className="hidden md:inline">Lyse (Dokumentation)</span>
             </p>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1" data-sticky-option-row>
               <FieldOptions
                 field={LYSE_FIELD}
                 erhebung={erhebung}

@@ -3,6 +3,10 @@
 import OptionButton from "@/components/erhebung/OptionButton";
 import styles from "@/components/nihss_items/nihssOptions.module.css";
 import { isOptionSelected, type ClickableField } from "@/lib/nihss/config";
+import {
+  fieldOptionsLayout,
+  type ExamViewMode,
+} from "@/lib/nihss/exam-view";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
 type FieldOptionsProps = {
@@ -11,8 +15,16 @@ type FieldOptionsProps = {
   readOnly: boolean;
   compact?: boolean;
   singleLine?: boolean;
+  viewMode?: ExamViewMode;
   onSelect: (field: ClickableField, value: string) => void;
 };
+
+const LAYOUT_CLASS = {
+  grid: styles.optionRowGrid,
+  single: styles.optionRowSingle,
+  wrap: styles.optionRow,
+  stack: "flex flex-col gap-2",
+} as const;
 
 export default function FieldOptions({
   field,
@@ -20,14 +32,12 @@ export default function FieldOptions({
   readOnly,
   compact,
   singleLine,
+  viewMode = "normal",
   onSelect,
 }: FieldOptionsProps) {
   const stored = erhebung[field.valueColumn];
-  const rowClass = singleLine
-    ? styles.optionRowSingle
-    : compact
-      ? styles.optionRow
-      : "flex flex-col gap-2";
+  const rowClass =
+    LAYOUT_CLASS[fieldOptionsLayout({ viewMode, singleLine, compact })];
 
   return (
     <div className={rowClass}>
