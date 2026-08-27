@@ -1,26 +1,61 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #005a8f;
+  /* TEMPIS brand (221026 Farbschema) */
+  --tempis-blue: #008fc1;
+  --tempis-blue-dark: #00648a;
+  --tempis-blue-darker: #005272;
+  --tempis-teal: #56a6be;
+  --tempis-orange: #ee7600;
+  --tempis-orange-red: #e14b1a;
+  --tempis-gold: #deba0a;
+  --tempis-sand: #dcc39a;
+  --tempis-sage: #a9cba0;
+  --tempis-sage-dark: #3f6a5c;
+  --tempis-sage-darker: #34584c;
+  --tempis-dusty: #8ab3c1;
+  --tempis-ice: #b0d1e1;
+  --tempis-signal: #c11313;
+  --tempis-signal-dark: #9a0f0f;
+
+  --background: #f4f8fa;
+  --foreground: #1b2a32;
+  --surface: #ffffff;
+  --muted: #3d4f58;
+  --border: #8ab3c1;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-tempis-blue: var(--tempis-blue);
+  --color-tempis-blue-dark: var(--tempis-blue-dark);
+  --color-tempis-blue-darker: var(--tempis-blue-darker);
+  --color-tempis-teal: var(--tempis-teal);
+  --color-tempis-orange: var(--tempis-orange);
+  --color-tempis-orange-red: var(--tempis-orange-red);
+  --color-tempis-gold: var(--tempis-gold);
+  --color-tempis-sand: var(--tempis-sand);
+  --color-tempis-sage: var(--tempis-sage);
+  --color-tempis-sage-dark: var(--tempis-sage-dark);
+  --color-tempis-sage-darker: var(--tempis-sage-darker);
+  --color-tempis-dusty: var(--tempis-dusty);
+  --color-tempis-ice: var(--tempis-ice);
+  --color-tempis-signal: var(--tempis-signal);
+  --color-tempis-signal-dark: var(--tempis-signal-dark);
+  --font-sans: "Century Gothic", Calibri, Arial, Helvetica, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #005a8f;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: light;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }

@@ -11,7 +11,7 @@ export default function Home() {
   return (
     <PageShell>
       <h1 className="text-2xl font-bold">NIHSS Erhebung</h1>
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted">
         Schnelle Dokumentation einer NIHSS-Untersuchung. Es werden keine
         patientenidentifizierenden Daten erfasst.
       </p>
@@ -20,7 +20,7 @@ export default function Home() {
           <Link
             key={action.href}
             href={action.href}
-            className="rounded-lg bg-gray-900 px-4 py-3 text-center font-semibold text-white hover:bg-gray-800"
+            className="rounded-lg bg-tempis-blue-dark px-4 py-3 text-center font-semibold text-white hover:bg-tempis-blue-darker"
           >
             {action.label}
           </Link>

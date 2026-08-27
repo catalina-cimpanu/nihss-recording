@@ -8,11 +8,11 @@ type ItemCardProps = {
 
 export default function ItemCard({ title, subtitle, children }: ItemCardProps) {
   return (
-    <section className="space-y-3 rounded-xl border p-3">
+    <section className="space-y-3 rounded-xl border border-border bg-surface p-3">
       <div>
         <h2 className="text-lg font-semibold">{title}</h2>
         {subtitle ? (
-          <p className="mt-1 text-sm text-gray-600">{subtitle}</p>
+          <p className="mt-1 text-sm text-muted">{subtitle}</p>
         ) : null}
       </div>
       {children}

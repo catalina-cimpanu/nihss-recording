@@ -16,17 +16,15 @@ export default async function RecordPage({
   return (
     <PageShell>
       <header className="space-y-1">
-        <p className="text-sm font-medium text-gray-500">Erhebung</p>
+        <p className="text-sm font-medium text-muted">Erhebung</p>
         <h1 className="text-2xl font-bold">NIHSS-Untersuchung</h1>
-        <p className="break-all text-sm text-gray-600">
+        <p className="break-all text-sm text-muted">
           Erhebungs-ID: {erhebung?.erhebungs_id ?? "nicht gefunden"}
         </p>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted">
           Untersuchungstyp: {erhebung?.untersuchungstyp ?? "–"}
         </p>
-        <p className="text-sm text-gray-600">
-          Status: {erhebung?.status ?? "–"}
-        </p>
+        <p className="text-sm text-muted">Status: {erhebung?.status ?? "–"}</p>
       </header>
 
       <div className="flex flex-wrap gap-3">
@@ -38,7 +36,7 @@ export default async function RecordPage({
         title="„Heben Sie bitte beide Arme“"
         subtitle="Motorik Arme – vollständiges Formular folgt"
       >
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted">
           Die NIHSS-Items, die Sticky-Leiste und die Zeitstempel werden in den
           nächsten Phasen ergänzt.
         </p>

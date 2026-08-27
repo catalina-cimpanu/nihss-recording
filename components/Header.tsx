@@ -9,9 +9,9 @@ const navItems = [
 
 export default function Header() {
   return (
-    <header className="border-b bg-white">
+    <header className="bg-tempis-blue-dark text-white">
       <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-2">
-        <Link href="/" className="text-sm font-semibold text-gray-900">
+        <Link href="/" className="text-sm font-semibold text-white">
           NIHSS Erhebung
         </Link>
         <nav className="flex flex-wrap items-center gap-3 text-sm font-medium">
@@ -19,7 +19,7 @@ export default function Header() {
             <Link
               key={item.href}
               href={item.href}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-tempis-ice hover:text-white"
             >
               {item.label}
             </Link>

@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="de">
-      <body>
+    <html lang="de" className="bg-background text-foreground">
+      <body className="min-h-screen bg-background text-foreground">
         <Header />
         {children}
       </body>
