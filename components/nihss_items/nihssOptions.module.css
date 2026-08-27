@@ -2,22 +2,34 @@
   width: 100%;
   border-width: 1px;
   border-style: solid;
-  border-radius: 0.75rem;
-  padding: 1rem;
+  border-radius: 0.6rem;
+  padding: 0.55rem 0.7rem;
   text-align: left;
-  font-size: 1.125rem;
-  line-height: 1.5;
+  font-size: 0.95rem;
+  line-height: 1.35;
   font-weight: 600;
   transition:
     background-color 150ms ease,
     border-color 150ms ease,
     color 150ms ease,
-    box-shadow 150ms ease,
-    transform 150ms ease;
+    box-shadow 150ms ease;
 }
 
-.optionButton:hover {
-  transform: translateY(-1px);
+.optionButton:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.optionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.optionRow .optionButton {
+  width: auto;
+  flex: 1 1 8rem;
+  text-align: center;
 }
 
 .optionButton:focus-visible {
@@ -107,4 +119,43 @@
   border-color: #334155;
   color: #ffffff;
   box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.25);
+}
+
+.stroke {
+  background-color: #e8f5fb;
+  border-color: #56a6be;
+  color: #005272;
+}
+
+.strokeSelected {
+  background-color: #00648a;
+  border-color: #005272;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 100, 138, 0.25);
+}
+
+.lyse {
+  background-color: #fdf2f8;
+  border-color: #f9a8d4;
+  color: #9d174d;
+}
+
+.lyseSelected {
+  background-color: #be123c;
+  border-color: #9f1239;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(190, 18, 60, 0.25);
+}
+
+.side {
+  background-color: #eef6f9;
+  border-color: #8ab3c1;
+  color: #1b2a32;
+}
+
+.sideSelected {
+  background-color: #56a6be;
+  border-color: #00648a;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(86, 166, 190, 0.25);
 }
