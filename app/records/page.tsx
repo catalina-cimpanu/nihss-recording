@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CsvExportButtons from "@/components/erhebung/CsvExportButtons";
+import RecordsFill from "@/components/erhebung/RecordsFill";
 import RecordsList from "@/components/erhebung/RecordsList";
 import PageShell from "@/components/PageShell";
 import { listErhebungen } from "@/lib/db/erhebungen";
@@ -22,7 +23,8 @@ export default async function RecordsPage() {
   const rows = await listErhebungen();
 
   return (
-    <PageShell title="Erhebungen">
+    <RecordsFill>
+    <PageShell title="Erhebungen" fill>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
           Gelöschte Erhebungen werden ausgeblendet, bleiben aber in der
@@ -36,7 +38,10 @@ export default async function RecordsPage() {
         </Link>
       </div>
       <CsvExportButtons />
-      <RecordsList initialRows={rows} />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <RecordsList initialRows={rows} />
+      </div>
     </PageShell>
+    </RecordsFill>
   );
 }
