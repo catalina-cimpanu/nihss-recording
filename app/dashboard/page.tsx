@@ -24,14 +24,13 @@ export default async function DashboardPage() {
   return (
     <PageShell title="Dashboard">
       <p className="text-sm text-muted">
-        Prototype-Statistiken ohne patientenidentifizierende Daten. Gelöschte
-        Erhebungen sind nicht enthalten.
+        Kennzahlen gelten nur für <strong>Echter Patient</strong>. Testdaten
+        sind nicht eingerechnet. Gelöschte Erhebungen sind nicht enthalten.
       </p>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <StatCard label="Erhebungen" value={String(stats.total)} />
-        <StatCard label="Test" value={String(stats.testCount)} />
-        <StatCard label="Echter Patient" value={String(stats.realCount)} />
+        <StatCard label="Echte Erhebungen" value={String(stats.realCount)} />
+        <StatCard label="Test (nicht in Kennzahlen)" value={String(stats.testCount)} />
         <StatCard
           label="NIHSS Mittelwert"
           value={formatStatNumber(stats.averageNihss)}

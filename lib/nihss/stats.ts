@@ -71,6 +71,9 @@ function durationMinutes(row: ErhebungRow): number | null {
 }
 
 export function buildDashboardStats(rows: ErhebungRow[]): DashboardStats {
+  const testCount = rows.filter((row) => row.untersuchungstyp === "Test").length;
+  const realRows = rows.filter((row) => row.untersuchungstyp === "Echter Patient");
+
   const durationCounts = {
     under10: 0,
     from10to20: 0,
@@ -80,7 +83,7 @@ export function buildDashboardStats(rows: ErhebungRow[]): DashboardStats {
     missing: 0,
   };
 
-  for (const row of rows) {
+  for (const row of realRows) {
     const minutes = durationMinutes(row);
     if (minutes === null) {
       durationCounts.missing += 1;
@@ -98,37 +101,37 @@ export function buildDashboardStats(rows: ErhebungRow[]): DashboardStats {
   }
 
   return {
-    total: rows.length,
-    testCount: rows.filter((row) => row.untersuchungstyp === "Test").length,
-    realCount: rows.filter((row) => row.untersuchungstyp === "Echter Patient")
-      .length,
-    averageNihss: average(rows.map((row) => row.nihss)),
-    medianNihss: median(rows.map((row) => row.nihss)),
-    averageGfast: average(rows.map((row) => row.g_fast)),
+    total: realRows.length,
+    testCount,
+    realCount: realRows.length,
+    averageNihss: average(realRows.map((row) => row.nihss)),
+    medianNihss: median(realRows.map((row) => row.nihss)),
+    averageGfast: average(realRows.map((row) => row.g_fast)),
     averageExamDurationLabel: formatAverageElapsedClock(
-      rows
+      realRows
         .map((row) => getDecisionDurations(row).dauer_untersuchung_ms)
         .filter((value): value is number => value != null),
     ),
     averageStartToStrokeLabel: formatAverageElapsedClock(
-      rows
+      realRows
         .map((row) => getDecisionDurations(row).dauer_start_zu_stroke_ms)
         .filter((value): value is number => value != null),
     ),
     averageStrokeToLyseLabel: formatAverageElapsedClock(
-      rows
+      realRows
         .map((row) => getDecisionDurations(row).dauer_stroke_zu_lyse_ms)
         .filter((value): value is number => value != null),
     ),
-    strokeJa: rows.filter((row) => row.stroke_status === "Ja").length,
-    strokeKein: rows.filter((row) => row.stroke_status === "Kein Stroke").length,
-    strokeOffen: rows.filter((row) => row.stroke_status === "nicht entschieden")
+    strokeJa: realRows.filter((row) => row.stroke_status === "Ja").length,
+    strokeKein: realRows.filter((row) => row.stroke_status === "Kein Stroke")
       .length,
-    lyseJa: rows.filter((row) => row.lyse_status === "Ja").length,
-    lyseKeine: rows.filter((row) => row.lyse_status === "Keine Lyse").length,
-    lyseOffen: rows.filter((row) => row.lyse_status === "nicht entschieden")
+    strokeOffen: realRows.filter((row) => row.stroke_status === "nicht entschieden")
       .length,
-    incompleteCount: rows.filter(
+    lyseJa: realRows.filter((row) => row.lyse_status === "Ja").length,
+    lyseKeine: realRows.filter((row) => row.lyse_status === "Keine Lyse").length,
+    lyseOffen: realRows.filter((row) => row.lyse_status === "nicht entschieden")
+      .length,
+    incompleteCount: realRows.filter(
       (row) =>
         getMissingNihssFields(row).length > 0 ||
         hasInvalidAtaxiaLimbCount(row),
@@ -137,7 +140,7 @@ export function buildDashboardStats(rows: ErhebungRow[]): DashboardStats {
       (field) => field.contributesToNihss && field.scoreColumn,
     ).map((field) => ({
       label: field.label,
-      count: rows.filter((row) => {
+      count: realRows.filter((row) => {
         const score = row[field.scoreColumn!];
         return typeof score === "number" && score > 0;
       }).length,

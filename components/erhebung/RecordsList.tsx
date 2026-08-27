@@ -135,7 +135,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
         <p className="text-sm text-tempis-signal">{error}</p>
       ) : null}
 
-      <ul className="space-y-3 md:hidden">
+      <ul className="max-h-[min(70vh,36rem)] space-y-3 overflow-y-auto md:hidden">
         {rows.map((row) => {
           const clocks = clocksFor(row);
           return (
@@ -185,9 +185,9 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
         })}
       </ul>
 
-      <div className="hidden overflow-x-auto rounded-xl border border-border bg-surface md:block">
+      <div className="hidden max-h-[min(70vh,36rem)] overflow-auto rounded-xl border border-border bg-surface md:block">
         <table className="min-w-full text-left text-sm">
-          <thead className="bg-tempis-ice/60 text-xs uppercase tracking-wide text-muted">
+          <thead className="sticky top-0 z-10 bg-tempis-ice text-xs uppercase tracking-wide text-muted">
             <tr>
               <th className="px-3 py-2 font-semibold">Erhebungs-ID</th>
               <th className="px-3 py-2 font-semibold">Erstellt am</th>
