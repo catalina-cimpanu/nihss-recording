@@ -1,11 +1,16 @@
-export type Untersuchungstyp = "Test" | "Echter Patient";
+import type { z } from "zod";
+import {
+  erhebungStatusSchema,
+  hemianopsieSeiteSchema,
+  lyseStatusSchema,
+  seiteSchema,
+  strokeStatusSchema,
+  untersuchungstypSchema,
+} from "@/lib/nihss/validation";
 
-export type ErhebungStatus = "offen" | "abgeschlossen" | "geloescht";
-
-export type StrokeStatus = "nicht entschieden" | "Ja" | "Kein Stroke";
-
-export type LyseStatus = "nicht entschieden" | "Ja" | "Keine Lyse";
-
-export type Seite = "links" | "rechts";
-
-export type HemianopsieSeite = "links" | "rechts" | "beidseits";
+export type Untersuchungstyp = z.infer<typeof untersuchungstypSchema>;
+export type ErhebungStatus = z.infer<typeof erhebungStatusSchema>;
+export type StrokeStatus = z.infer<typeof strokeStatusSchema>;
+export type LyseStatus = z.infer<typeof lyseStatusSchema>;
+export type Seite = z.infer<typeof seiteSchema>;
+export type HemianopsieSeite = z.infer<typeof hemianopsieSeiteSchema>;
