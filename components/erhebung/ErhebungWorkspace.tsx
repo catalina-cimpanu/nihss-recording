@@ -10,6 +10,7 @@ import {
   NIHSS_FIELDS,
   STROKE_FIELD,
   getFieldByKey,
+  isAbnormalField,
   type ClickableField,
 } from "@/lib/nihss/config";
 import {
@@ -370,7 +371,14 @@ export default function ErhebungWorkspace({
                 ) : null}
               </div>
               {fields.map((field) => (
-                <div key={field.key} className="space-y-2">
+                <div
+                  key={field.key}
+                  className={
+                    isAbnormalField(field, erhebung)
+                      ? "space-y-2 rounded-lg border border-tempis-orange/50 bg-tempis-orange/5 p-2"
+                      : "space-y-2"
+                  }
+                >
                   <h3 className="text-sm font-semibold">{field.label}</h3>
                   {field.selection === "multiple" ? (
                     <p className="text-xs text-muted">

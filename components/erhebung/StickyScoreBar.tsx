@@ -18,7 +18,7 @@ export default function StickyScoreBar({
   onSelect,
 }: StickyScoreBarProps) {
   return (
-    <div className="sticky top-0 z-50 border-b border-border bg-surface/95 px-3 py-2 shadow-sm backdrop-blur">
+    <div className="sticky top-0 z-50 border-b border-border bg-surface/95 px-3 py-2 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/90">
       <div className="mx-auto flex max-w-4xl flex-col gap-2">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <p className="text-sm font-semibold">

@@ -88,6 +88,25 @@ export function isOptionSelected(
   return stored === optionValue;
 }
 
+export function isAbnormalField(
+  field: ClickableField,
+  erhebung: ErhebungRow,
+): boolean {
+  if (field.scoreColumn) {
+    const score = erhebung[field.scoreColumn];
+    return typeof score === "number" && score > 0;
+  }
+
+  if (field.selection === "multiple") {
+    return parseStoredValues(erhebung[field.valueColumn]).some(
+      (value) => value.startsWith("1 -") || value.startsWith("1 –"),
+    );
+  }
+
+  const value = erhebung[field.valueColumn];
+  return typeof value === "string" && value.length > 0;
+}
+
 export type FormSection = {
   title: string;
   prompt?: string;
