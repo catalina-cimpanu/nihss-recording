@@ -1,6 +1,7 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type {
   EreignisInsert,
+  EreignisRow,
   ErhebungInsert,
   ErhebungRow,
   ErhebungUpdate,
@@ -28,6 +29,40 @@ export async function listErhebungen(): Promise<ErhebungListItem[]> {
     .select(ERHEBUNG_LIST_COLUMNS)
     .neq("status", "geloescht")
     .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listErhebungenFull(): Promise<ErhebungRow[]> {
+  const { data, error } = await getSupabaseClient()
+    .from("erhebungen")
+    .select("*")
+    .neq("status", "geloescht")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function listEreignisseForErhebungen(
+  erhebungIds: string[],
+): Promise<EreignisRow[]> {
+  if (erhebungIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await getSupabaseClient()
+    .from("ereignisse")
+    .select("*")
+    .in("erhebung_id", erhebungIds)
+    .order("created_at", { ascending: true });
 
   if (error) {
     throw error;

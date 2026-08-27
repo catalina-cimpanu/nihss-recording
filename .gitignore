@@ -6,6 +6,9 @@
 # design
 *.pdf
 
+# testing
+*.csv
+
 # dependencies
 /node_modules
 /.pnp
