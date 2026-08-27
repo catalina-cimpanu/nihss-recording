@@ -2,6 +2,7 @@
 
 import FieldOptions from "@/components/erhebung/FieldOptions";
 import { LYSE_FIELD, STROKE_FIELD, type ClickableField } from "@/lib/nihss/config";
+import { calculateGfast, calculateNihss } from "@/lib/nihss/scoring";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
 type StickyScoreBarProps = {
@@ -18,15 +19,15 @@ export default function StickyScoreBar({
   onSelect,
 }: StickyScoreBarProps) {
   return (
-    <div className="sticky top-0 z-50 border-b border-border bg-surface/95 px-2 pt-1.5 pb-2.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/90 md:px-3 md:py-2">
+    <div className="border-b border-border bg-surface/95 px-2 pt-1.5 pb-2.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/90 md:px-3 md:py-2">
       <div className="mx-auto flex max-w-4xl flex-col gap-1.5 md:gap-2">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0">
           <p className="text-sm font-semibold leading-tight md:text-2xl">
             NIHSS{" "}
-            <span className="tabular-nums">{erhebung.nihss}</span>
+            <span className="tabular-nums">{calculateNihss(erhebung)}</span>
             <span className="mx-2 text-muted">·</span>
             G-FAST{" "}
-            <span className="tabular-nums">{erhebung.g_fast}</span>
+            <span className="tabular-nums">{calculateGfast(erhebung)}</span>
           </p>
           <div className="text-right text-xs text-muted">
             <p className="hidden md:inline">

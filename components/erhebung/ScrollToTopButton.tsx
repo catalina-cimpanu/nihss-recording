@@ -53,7 +53,7 @@ export default function ScrollToTopButton({
         type="button"
         aria-label="Nach oben"
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        className={`mb-2 mr-3 self-end ${buttonClass}`}
+        className={`mb-2 ${buttonClass}`}
       >
         <UpArrow />
       </button>

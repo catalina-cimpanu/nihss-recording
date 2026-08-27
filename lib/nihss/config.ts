@@ -19,11 +19,12 @@ export const NIHSS_SCORE_KEYS = [
 ] as const;
 
 export const GFAST_SCORE_KEYS = [
+  "punkte_2",
+  "punkte_4",
   "punkte_5a",
   "punkte_5b",
   "punkte_9_grob",
   "punkte_10",
-  "punkte_4",
 ] as const;
 
 export type NihssScoreKey = (typeof NIHSS_SCORE_KEYS)[number];
@@ -273,7 +274,7 @@ export const NIHSS_FIELDS: ClickableField[] = [
     initialAtColumn: "nihss_2_blickdeviation_initial_at",
     lastAtColumn: "nihss_2_blickdeviation_last_at",
     contributesToNihss: true,
-    contributesToGfast: false,
+    contributesToGfast: true,
     options: [
       option("0 – Normal", 0, "score0"),
       option("1 – Partielle Blickparese", 1, "score1"),

@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { calculateGfast, withDerivedScores } from "@/lib/nihss/scoring";
 import type {
   EreignisInsert,
   EreignisRow,
@@ -26,7 +27,9 @@ export type ErhebungListItem = Pick<
 export async function listErhebungen(): Promise<ErhebungListItem[]> {
   const { data, error } = await getSupabaseClient()
     .from("erhebungen")
-    .select(ERHEBUNG_LIST_COLUMNS)
+    .select(
+      "id, created_at, erhebungs_id, untersuchungstyp, status, nihss, g_fast, stroke_status, lyse_status, punkte_2, punkte_4, punkte_5a, punkte_5b, punkte_9_grob, punkte_10",
+    )
     .neq("status", "geloescht")
     .order("created_at", { ascending: false });
 
@@ -34,7 +37,17 @@ export async function listErhebungen(): Promise<ErhebungListItem[]> {
     throw error;
   }
 
-  return data ?? [];
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    created_at: row.created_at,
+    erhebungs_id: row.erhebungs_id,
+    untersuchungstyp: row.untersuchungstyp,
+    status: row.status,
+    nihss: row.nihss,
+    g_fast: calculateGfast(row),
+    stroke_status: row.stroke_status,
+    lyse_status: row.lyse_status,
+  }));
 }
 
 export async function listErhebungenFull(): Promise<ErhebungRow[]> {
@@ -48,7 +61,7 @@ export async function listErhebungenFull(): Promise<ErhebungRow[]> {
     throw error;
   }
 
-  return data ?? [];
+  return (data ?? []).map(withDerivedScores);
 }
 
 export async function listEreignisseForErhebungen(
@@ -82,7 +95,7 @@ export async function getErhebung(id: string): Promise<ErhebungRow | null> {
     throw error;
   }
 
-  return data;
+  return data ? withDerivedScores(data) : null;
 }
 
 export async function createErhebung(

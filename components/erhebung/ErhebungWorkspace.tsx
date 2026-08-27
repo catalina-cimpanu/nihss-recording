@@ -5,6 +5,10 @@ import FieldOptions from "@/components/erhebung/FieldOptions";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
 import ScrollToTopButton from "@/components/erhebung/ScrollToTopButton";
 import StickyScoreBar from "@/components/erhebung/StickyScoreBar";
+import WarningToasts, {
+  WARNING_TOAST_MS,
+  type WarningToast,
+} from "@/components/erhebung/WarningToasts";
 import optionStyles from "@/components/nihss_items/nihssOptions.module.css";
 import { persistErhebungAndEreignisse } from "@/lib/db/erhebungen";
 import {
@@ -117,10 +121,11 @@ export default function ErhebungWorkspace({
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [now, setNow] = useState(() => new Date());
-  const [rapidClickWarning, setRapidClickWarning] = useState<string | null>(
-    null,
-  );
+  const [toasts, setToasts] = useState<WarningToast[]>([]);
   const lastClickRef = useRef<{ fieldKey: string; at: number } | null>(null);
+  const toastIdRef = useRef(0);
+  const toastTimersRef = useRef<Map<number, number>>(new Map());
+  const seenDocWarningsRef = useRef<Set<string>>(new Set());
 
   const readOnly = erhebung.status === "abgeschlossen";
   const missingFields = useMemo(
@@ -140,13 +145,57 @@ export default function ErhebungWorkspace({
     isIncomplete ||
     undecidedStrokeLyse.length > 0 ||
     lyseJaWithKeinStroke;
-  const warnings = useMemo(() => {
-    const list = getDocumentationWarnings(erhebung, now);
-    if (rapidClickWarning) {
-      list.push(rapidClickWarning);
+  const documentationWarnings = useMemo(
+    () => getDocumentationWarnings(erhebung, now),
+    [erhebung, now],
+  );
+
+  function pushToast(message: string) {
+    toastIdRef.current += 1;
+    const id = toastIdRef.current;
+    setToasts((current) => {
+      const replaced = current.filter((toast) => {
+        if (toast.message !== message) {
+          return true;
+        }
+        const timer = toastTimersRef.current.get(toast.id);
+        if (timer) {
+          window.clearTimeout(timer);
+          toastTimersRef.current.delete(toast.id);
+        }
+        return false;
+      });
+      return [...replaced, { id, message }];
+    });
+    const timer = window.setTimeout(() => {
+      setToasts((current) => current.filter((toast) => toast.id !== id));
+      toastTimersRef.current.delete(id);
+    }, WARNING_TOAST_MS);
+    toastTimersRef.current.set(id, timer);
+  }
+
+  useEffect(() => {
+    return () => {
+      for (const timer of toastTimersRef.current.values()) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const current = new Set(documentationWarnings);
+    for (const warning of documentationWarnings) {
+      if (!seenDocWarningsRef.current.has(warning)) {
+        seenDocWarningsRef.current.add(warning);
+        pushToast(warning);
+      }
     }
-    return list;
-  }, [erhebung, now, rapidClickWarning]);
+    for (const warning of [...seenDocWarningsRef.current]) {
+      if (!current.has(warning)) {
+        seenDocWarningsRef.current.delete(warning);
+      }
+    }
+  }, [documentationWarnings]);
 
   useEffect(() => {
     if (readOnly || !erhebung.startzeit_untersuchung) {
@@ -189,11 +238,9 @@ export default function ErhebungWorkspace({
 
     const clickedAt = Date.now();
     if (isRapidRepeatClick(lastClickRef.current, field.key, clickedAt)) {
-      setRapidClickWarning(
+      pushToast(
         `Sehr schnelle wiederholte Klicks bei ${field.label}. Jeder Klick wird gespeichert.`,
       );
-    } else {
-      setRapidClickWarning(null);
     }
     lastClickRef.current = { fieldKey: field.key, at: clickedAt };
 
@@ -273,16 +320,19 @@ export default function ErhebungWorkspace({
 
   return (
     <div>
-      <StickyScoreBar
-        erhebung={erhebung}
-        readOnly={readOnly}
-        incompleteCount={incompleteCount}
-        onSelect={handleSelect}
-      />
+      <div className="sticky top-0 z-50">
+        <StickyScoreBar
+          erhebung={erhebung}
+          readOnly={readOnly}
+          incompleteCount={incompleteCount}
+          onSelect={handleSelect}
+        />
+        <WarningToasts toasts={toasts} />
+      </div>
 
       <div
         className={`mx-auto max-w-4xl space-y-4 px-4 py-4 ${
-          readOnly ? "pb-4" : "pb-28 md:pb-4"
+          readOnly ? "pb-4" : "pb-28"
         }`}
       >
         {readOnly ? (
@@ -297,15 +347,6 @@ export default function ErhebungWorkspace({
           </p>
         ) : null}
 
-        {warnings.map((warning) => (
-          <p
-            key={warning}
-            className="rounded-lg border border-tempis-orange/40 bg-surface px-3 py-2 text-sm"
-          >
-            {warning}
-          </p>
-        ))}
-
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
@@ -314,14 +355,6 @@ export default function ErhebungWorkspace({
             className="rounded-lg bg-tempis-sage-dark px-4 py-3 font-semibold text-white hover:bg-tempis-sage-darker disabled:opacity-60"
           >
             Untersuchung starten
-          </button>
-          <button
-            type="button"
-            onClick={handleStopRequest}
-            disabled={readOnly}
-            className="hidden rounded-lg bg-tempis-signal px-4 py-3 font-semibold text-white hover:bg-tempis-signal-dark disabled:opacity-60 md:inline-flex"
-          >
-            Untersuchung beenden
           </button>
         </div>
 
@@ -458,30 +491,32 @@ export default function ErhebungWorkspace({
       </div>
 
       {!readOnly ? (
-        <div className="fixed inset-x-0 bottom-0 z-50 flex flex-col md:hidden">
-          <ScrollToTopButton variant="docked" />
-          <div className="border-t border-border bg-surface px-3 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
-            <button
-              type="button"
-              onClick={handleStopRequest}
-              className="w-full rounded-lg bg-tempis-signal px-4 py-1.5 text-sm font-semibold text-white hover:bg-tempis-signal-dark"
-            >
-              Untersuchung beenden
-            </button>
+        <div className="fixed inset-x-0 bottom-0 z-50 flex flex-col">
+          <div className="mx-auto flex w-full max-w-4xl justify-end px-4">
+            <ScrollToTopButton variant="docked" />
+          </div>
+          <div className="border-t border-border bg-surface px-4 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.08)] md:pt-2">
+            <div className="mx-auto max-w-4xl">
+              <button
+                type="button"
+                onClick={handleStopRequest}
+                className="flex w-full items-center justify-center rounded-[0.4rem] bg-tempis-signal px-4 py-1.5 text-sm font-semibold text-white hover:bg-tempis-signal-dark md:min-h-[2.75rem] md:px-2 md:py-[0.45rem] md:text-[0.85rem]"
+              >
+                Untersuchung beenden
+              </button>
+            </div>
           </div>
         </div>
-      ) : null}
-
-      <ScrollToTopButton
-        className={readOnly ? "bottom-4" : "hidden bottom-4 md:flex"}
-      />
+      ) : (
+        <ScrollToTopButton className="bottom-4" />
+      )}
 
       {isSaving ? (
         <p
           className={`pointer-events-none fixed left-1/2 z-[60] -translate-x-1/2 rounded-full bg-tempis-blue-dark px-4 py-2 text-sm font-semibold text-white shadow-lg ${
             readOnly
               ? "bottom-4"
-              : "bottom-[calc(3.75rem+env(safe-area-inset-bottom))] md:bottom-4"
+              : "bottom-[calc(3.75rem+env(safe-area-inset-bottom))] md:bottom-[calc(4.75rem+env(safe-area-inset-bottom))]"
           }`}
         >
           Speichert…

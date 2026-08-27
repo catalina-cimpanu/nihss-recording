@@ -1,6 +1,5 @@
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 import {
-  GFAST_SCORE_KEYS,
   NIHSS_SCORE_KEYS,
   type GfastScoreKey,
   type NihssScoreKey,
@@ -19,8 +18,34 @@ export function calculateNihss(
   return sumScores(erhebung, NIHSS_SCORE_KEYS);
 }
 
+function isPositiveFinding(score: number | null | undefined): boolean {
+  return (score ?? 0) >= 1;
+}
+
 export function calculateGfast(
   erhebung: Pick<ErhebungRow, GfastScoreKey>,
 ): number {
-  return sumScores(erhebung, GFAST_SCORE_KEYS);
+  const gaze = isPositiveFinding(erhebung.punkte_2);
+  const face = isPositiveFinding(erhebung.punkte_4);
+  const arm =
+    isPositiveFinding(erhebung.punkte_5a) ||
+    isPositiveFinding(erhebung.punkte_5b);
+  const speech =
+    isPositiveFinding(erhebung.punkte_9_grob) ||
+    isPositiveFinding(erhebung.punkte_10);
+
+  return Number(gaze) + Number(face) + Number(arm) + Number(speech);
+}
+
+export function withDerivedScores<
+  T extends Pick<ErhebungRow, NihssScoreKey | GfastScoreKey> & {
+    nihss: number;
+    g_fast: number;
+  },
+>(row: T): T {
+  return {
+    ...row,
+    nihss: calculateNihss(row),
+    g_fast: calculateGfast(row),
+  };
 }
