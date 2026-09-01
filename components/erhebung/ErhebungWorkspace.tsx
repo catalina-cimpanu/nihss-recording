@@ -29,6 +29,11 @@ import {
   applyLifecycleEvent,
   applyMissingFieldsAsNormal,
 } from "@/lib/nihss/clicks";
+import {
+  AUTO_CLOSE_AFTER_MS,
+  autoCloseStopAt,
+  shouldAutoCloseExam,
+} from "@/lib/nihss/duration";
 import { formatBerlinTime } from "@/lib/nihss/timeline";
 import {
   getAtaxiaIncompleteLabel,
@@ -131,6 +136,9 @@ export default function ErhebungWorkspace({
   const toastIdRef = useRef(0);
   const toastTimersRef = useRef<Map<number, number>>(new Map());
   const seenDocWarningsRef = useRef<Set<string>>(new Set());
+  const erhebungRef = useRef(erhebung);
+  const autoCloseLockRef = useRef(false);
+  erhebungRef.current = erhebung;
 
   const readOnly = erhebung.status === "abgeschlossen";
   const missingFields = useMemo(
@@ -231,6 +239,46 @@ export default function ErhebungWorkspace({
     }
   }
 
+  useEffect(() => {
+    if (readOnly || isSaving || autoCloseLockRef.current) {
+      return;
+    }
+    if (!erhebung.startzeit_untersuchung) {
+      return;
+    }
+
+    const startMs = new Date(erhebung.startzeit_untersuchung).getTime();
+    if (!Number.isFinite(startMs)) {
+      return;
+    }
+
+    const delay = Math.max(0, startMs + AUTO_CLOSE_AFTER_MS - Date.now());
+    const id = window.setTimeout(() => {
+      const current = erhebungRef.current;
+      if (autoCloseLockRef.current || current.status !== "offen") {
+        return;
+      }
+      if (!shouldAutoCloseExam(current, new Date())) {
+        return;
+      }
+      const stopAt = autoCloseStopAt(current);
+      if (!stopAt) {
+        return;
+      }
+
+      autoCloseLockRef.current = true;
+      setCloseDialogOpen(false);
+      const result = applyLifecycleEvent({
+        erhebung: current,
+        now: stopAt,
+        kind: "stop",
+      });
+      void persist(result.erhebung, [result.ereignis]);
+    }, delay);
+
+    return () => window.clearTimeout(id);
+  }, [readOnly, isSaving, erhebung.id, erhebung.startzeit_untersuchung]);
+
   async function handleSelect(field: ClickableField, value: string) {
     if (readOnly) {
       return;
@@ -255,7 +303,7 @@ export default function ErhebungWorkspace({
       option,
       now: new Date(),
     });
-    await persist(result.erhebung, [result.ereignis]);
+    await persist(result.erhebung, result.ereignisse);
   }
 
   async function handleStart() {

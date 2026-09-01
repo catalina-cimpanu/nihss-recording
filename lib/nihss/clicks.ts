@@ -46,9 +46,26 @@ export function applyFieldClick(args: {
   field: ClickableField;
   option: NihssOption;
   now: Date;
-}): { erhebung: ErhebungRow; ereignis: EreignisInsert } {
+}): {
+  erhebung: ErhebungRow;
+  ereignis: EreignisInsert;
+  ereignisse: EreignisInsert[];
+} {
   const { field, option, now } = args;
-  const next: ErhebungRow = { ...args.erhebung };
+  const startEvents: EreignisInsert[] = [];
+  let source = args.erhebung;
+
+  if (!source.startzeit_untersuchung && source.status !== "abgeschlossen") {
+    const started = applyLifecycleEvent({
+      erhebung: source,
+      now,
+      kind: "start",
+    });
+    source = started.erhebung;
+    startEvents.push(started.ereignis);
+  }
+
+  const next: ErhebungRow = { ...source };
   const nowIso = now.toISOString();
   const wasSelected =
     field.selection === "multiple" &&
@@ -104,16 +121,19 @@ export function applyFieldClick(args: {
     formatTimelineLine(now, field.label, timelineValue),
   );
 
+  const ereignis: EreignisInsert = {
+    erhebung_id: next.id,
+    feld_key: field.key,
+    feld_label: field.label,
+    wert_label: timelineValue,
+    wert_score: option.score,
+    ereignis_typ: "click",
+  };
+
   return {
     erhebung: next,
-    ereignis: {
-      erhebung_id: next.id,
-      feld_key: field.key,
-      feld_label: field.label,
-      wert_label: timelineValue,
-      wert_score: option.score,
-      ereignis_typ: "click",
-    },
+    ereignis,
+    ereignisse: [...startEvents, ereignis],
   };
 }
 
@@ -190,7 +210,7 @@ export function applyMissingFieldsAsNormal(args: {
       now: args.now,
     });
     current = result.erhebung;
-    ereignisse.push(result.ereignis);
+    ereignisse.push(...result.ereignisse);
   }
 
   return { erhebung: current, ereignisse };

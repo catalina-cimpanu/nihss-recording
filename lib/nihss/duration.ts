@@ -30,6 +30,35 @@ export type DecisionClocks = {
   strokeToLyse: DecisionClock;
 };
 
+export type AutoCloseInput = Pick<
+  ErhebungRow,
+  "status" | "startzeit_untersuchung" | "endzeit_untersuchung"
+>;
+
+export const AUTO_CLOSE_AFTER_MS = 3 * 60 * 60 * 1000;
+
+export function autoCloseStopAt(row: AutoCloseInput): Date | null {
+  const startMs = parseTimestamp(row.startzeit_untersuchung);
+  if (startMs == null) {
+    return null;
+  }
+
+  return new Date(startMs + AUTO_CLOSE_AFTER_MS);
+}
+
+export function shouldAutoCloseExam(row: AutoCloseInput, now: Date): boolean {
+  if (row.status !== "offen") {
+    return false;
+  }
+
+  const startMs = parseTimestamp(row.startzeit_untersuchung);
+  if (startMs == null) {
+    return false;
+  }
+
+  return now.getTime() - startMs >= AUTO_CLOSE_AFTER_MS;
+}
+
 export function formatElapsedClock(durationMs: number): string {
   if (!Number.isFinite(durationMs) || durationMs < 0) {
     return "0:00";
