@@ -4,7 +4,7 @@ export default function Footer() {
   return (
     <footer className="mt-auto border-t border-tempis-blue-darker bg-tempis-blue-dark px-4 py-3 text-center text-xs text-tempis-ice">
       <p>
-        {year} · Made by Catalina
+        {year} · Made for 🧠🧠🧠
       </p>
     </footer>
   );
