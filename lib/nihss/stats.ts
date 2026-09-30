@@ -30,6 +30,10 @@ export type DashboardStats = {
   lyseKeine: number;
   lyseOffen: number;
   incompleteCount: number;
+  strokeConcordancePercent: number | null;
+  lyseConcordancePercent: number | null;
+  averageStrokeToAfterCompletionLabel: string;
+  averageLyseToAfterCompletionLabel: string;
   abnormalFrequencies: AbnormalFrequency[];
   durationBuckets: DurationBucket[];
 };
@@ -54,6 +58,60 @@ function median(values: number[]): number | null {
   }
 
   return sorted[middle];
+}
+
+function parseTimestamp(value: string | null | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+
+  const ms = new Date(value).getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function positiveDiffMs(from: string | null, to: string | null): number | null {
+  const start = parseTimestamp(from);
+  const end = parseTimestamp(to);
+  if (start == null || end == null || end < start) {
+    return null;
+  }
+
+  return end - start;
+}
+
+function lastDecisionAt(
+  lastAt: string | null,
+  initialAt: string | null,
+): string | null {
+  return lastAt ?? initialAt;
+}
+
+function isAfterCompletionStroke(
+  value: ErhebungRow["stroke_after_completion_status"],
+): value is "Ja" | "Kein Stroke" {
+  return value === "Ja" || value === "Kein Stroke";
+}
+
+function isAfterCompletionLyse(
+  value: ErhebungRow["lyse_after_completion_status"],
+): value is "Ja" | "Keine Lyse" {
+  return value === "Ja" || value === "Keine Lyse";
+}
+
+function concordancePercent(
+  rows: ErhebungRow[],
+  matches: (row: ErhebungRow) => boolean | null,
+): number | null {
+  const comparable = rows
+    .map(matches)
+    .filter((value): value is boolean => value !== null);
+  if (comparable.length === 0) {
+    return null;
+  }
+
+  return (
+    (comparable.filter(Boolean).length / comparable.length) * 100
+  );
 }
 
 function durationMinutes(row: ErhebungRow): number | null {
@@ -136,6 +194,36 @@ export function buildDashboardStats(rows: ErhebungRow[]): DashboardStats {
         getMissingNihssFields(row).length > 0 ||
         hasInvalidAtaxiaLimbCount(row),
     ).length,
+    strokeConcordancePercent: concordancePercent(realRows, (row) =>
+      isAfterCompletionStroke(row.stroke_after_completion_status)
+        ? row.stroke_status === row.stroke_after_completion_status
+        : null,
+    ),
+    lyseConcordancePercent: concordancePercent(realRows, (row) =>
+      isAfterCompletionLyse(row.lyse_after_completion_status)
+        ? row.lyse_status === row.lyse_after_completion_status
+        : null,
+    ),
+    averageStrokeToAfterCompletionLabel: formatAverageElapsedClock(
+      realRows
+        .map((row) =>
+          positiveDiffMs(
+            lastDecisionAt(row.stroke_last_at, row.stroke_initial_at),
+            row.stroke_after_completion_at,
+          ),
+        )
+        .filter((value): value is number => value != null),
+    ),
+    averageLyseToAfterCompletionLabel: formatAverageElapsedClock(
+      realRows
+        .map((row) =>
+          positiveDiffMs(
+            lastDecisionAt(row.lyse_last_at, row.lyse_initial_at),
+            row.lyse_after_completion_at,
+          ),
+        )
+        .filter((value): value is number => value != null),
+    ),
     abnormalFrequencies: NIHSS_FIELDS.filter(
       (field) => field.contributesToNihss && field.scoreColumn,
     ).map((field) => ({

@@ -15,9 +15,13 @@ function row(overrides: Partial<ErhebungRow>): ErhebungRow {
     stroke_status: "nicht entschieden",
     stroke_initial_at: null,
     stroke_last_at: null,
+    stroke_after_completion_status: null,
+    stroke_after_completion_at: null,
     lyse_status: "nicht entschieden",
     lyse_initial_at: null,
     lyse_last_at: null,
+    lyse_after_completion_status: null,
+    lyse_after_completion_at: null,
     nihss: 0,
     g_fast: 0,
     timeline: "",
@@ -53,5 +57,70 @@ describe("buildDashboardStats", () => {
     assert.equal(stats.strokeJa, 1);
     assert.equal(stats.lyseJa, 0);
     assert.equal(stats.lyseKeine, 1);
+  });
+
+  it("reports Stroke and Lyse concordance only when after-completion answers exist", () => {
+    const stats = buildDashboardStats([
+      row({
+        id: "match",
+        stroke_status: "Ja",
+        stroke_after_completion_status: "Ja",
+        lyse_status: "Keine Lyse",
+        lyse_after_completion_status: "Keine Lyse",
+      }),
+      row({
+        id: "mismatch",
+        stroke_status: "Ja",
+        stroke_after_completion_status: "Kein Stroke",
+        lyse_status: "Ja",
+        lyse_after_completion_status: "Keine Lyse",
+      }),
+      row({
+        id: "missing-after",
+        stroke_status: "Ja",
+        lyse_status: "Ja",
+      }),
+      row({
+        id: "test",
+        untersuchungstyp: "Test",
+        stroke_status: "Kein Stroke",
+        stroke_after_completion_status: "Kein Stroke",
+        lyse_status: "Keine Lyse",
+        lyse_after_completion_status: "Keine Lyse",
+      }),
+    ]);
+
+    assert.equal(stats.strokeConcordancePercent, 50);
+    assert.equal(stats.lyseConcordancePercent, 50);
+  });
+
+  it("averages time from last in-exam Stroke/Lyse click to after-completion click", () => {
+    const stats = buildDashboardStats([
+      row({
+        id: "a",
+        stroke_status: "Ja",
+        stroke_last_at: "2026-08-27T10:09:00.000Z",
+        stroke_after_completion_status: "Ja",
+        stroke_after_completion_at: "2026-08-27T10:12:00.000Z",
+        lyse_status: "Ja",
+        lyse_last_at: "2026-08-27T10:11:00.000Z",
+        lyse_after_completion_status: "Ja",
+        lyse_after_completion_at: "2026-08-27T10:13:00.000Z",
+      }),
+      row({
+        id: "b",
+        stroke_status: "Kein Stroke",
+        stroke_last_at: "2026-08-27T10:00:00.000Z",
+        stroke_after_completion_status: "Kein Stroke",
+        stroke_after_completion_at: "2026-08-27T10:01:00.000Z",
+        lyse_status: "Keine Lyse",
+        lyse_last_at: "2026-08-27T10:00:00.000Z",
+        lyse_after_completion_status: "Keine Lyse",
+        lyse_after_completion_at: "2026-08-27T10:05:00.000Z",
+      }),
+    ]);
+
+    assert.equal(stats.averageStrokeToAfterCompletionLabel, "2:00");
+    assert.equal(stats.averageLyseToAfterCompletionLabel, "3:30");
   });
 });

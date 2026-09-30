@@ -32,6 +32,10 @@ export default async function DashboardPage() {
         <StatCard label="Echte Erhebungen" value={String(stats.realCount)} />
         <StatCard label="Test (nicht in Kennzahlen)" value={String(stats.testCount)} />
         <StatCard
+          label="Unvollständig"
+          value={String(stats.incompleteCount)}
+        />
+        <StatCard
           label="NIHSS Mittelwert"
           value={formatStatNumber(stats.averageNihss)}
         />
@@ -55,9 +59,30 @@ export default async function DashboardPage() {
           label="Stroke→Lyse Mittelwert"
           value={stats.averageStrokeToLyseLabel}
         />
+
         <StatCard
-          label="Unvollständig"
-          value={String(stats.incompleteCount)}
+          label="Stroke vs nach kompletter Untersuchung"
+          value={
+            stats.strokeConcordancePercent == null
+              ? "–"
+              : `${formatStatNumber(stats.strokeConcordancePercent)} %`
+          }
+        />
+        <StatCard
+          label="Lyse vs nach kompletter Untersuchung"
+          value={
+            stats.lyseConcordancePercent == null
+              ? "–"
+              : `${formatStatNumber(stats.lyseConcordancePercent)} %`
+          }
+        />
+        <StatCard
+          label="Stroke → nach kompletter Untersuchung"
+          value={stats.averageStrokeToAfterCompletionLabel}
+        />
+        <StatCard
+          label="Lyse → nach kompletter Untersuchung"
+          value={stats.averageLyseToAfterCompletionLabel}
         />
       </section>
 
