@@ -534,6 +534,29 @@ export const LYSE_FIELD: ClickableField = {
   ],
 };
 
+function withoutUndecided(field: ClickableField): ClickableField {
+  return {
+    ...field,
+    options: field.options.filter((option) => option.value !== "nicht entschieden"),
+  };
+}
+
+export const AFTER_COMPLETION_STROKE_FIELD: ClickableField = {
+  ...withoutUndecided(STROKE_FIELD),
+  key: "stroke_after_completion",
+  valueColumn: "stroke_after_completion_status",
+  initialAtColumn: "stroke_after_completion_at",
+  lastAtColumn: "stroke_after_completion_at",
+};
+
+export const AFTER_COMPLETION_LYSE_FIELD: ClickableField = {
+  ...withoutUndecided(LYSE_FIELD),
+  key: "lyse_after_completion",
+  valueColumn: "lyse_after_completion_status",
+  initialAtColumn: "lyse_after_completion_at",
+  lastAtColumn: "lyse_after_completion_at",
+};
+
 export const FORM_SECTIONS: FormSection[] = [
   {
     title: "Motorik Arme",

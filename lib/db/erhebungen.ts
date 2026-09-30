@@ -23,6 +23,8 @@ export type ErhebungListItem = Pick<
   | "g_fast"
   | "stroke_status"
   | "lyse_status"
+  | "stroke_after_completion_status"
+  | "lyse_after_completion_status"
   | "startzeit_untersuchung"
   | "endzeit_untersuchung"
 > & {
@@ -34,7 +36,7 @@ export async function listErhebungen(): Promise<ErhebungListItem[]> {
   const { data, error } = await getSupabaseClient()
     .from("erhebungen")
     .select(
-      "id, created_at, erhebungs_id, untersuchungstyp, status, nihss, g_fast, stroke_status, lyse_status, startzeit_untersuchung, endzeit_untersuchung, stroke_initial_at, stroke_last_at, lyse_initial_at, lyse_last_at, punkte_2, punkte_4, punkte_5a, punkte_5b, punkte_9_grob, punkte_10",
+      "id, created_at, erhebungs_id, untersuchungstyp, status, nihss, g_fast, stroke_status, lyse_status, stroke_after_completion_status, lyse_after_completion_status, startzeit_untersuchung, endzeit_untersuchung, stroke_initial_at, stroke_last_at, lyse_initial_at, lyse_last_at, punkte_2, punkte_4, punkte_5a, punkte_5b, punkte_9_grob, punkte_10",
     )
     .neq("status", "geloescht")
     .order("created_at", { ascending: false });
@@ -56,6 +58,8 @@ export async function listErhebungen(): Promise<ErhebungListItem[]> {
       g_fast: calculateGfast(row),
       stroke_status: row.stroke_status,
       lyse_status: row.lyse_status,
+      stroke_after_completion_status: row.stroke_after_completion_status,
+      lyse_after_completion_status: row.lyse_after_completion_status,
       startzeit_untersuchung: row.startzeit_untersuchung,
       endzeit_untersuchung: row.endzeit_untersuchung,
       stroke_entscheidung_at: durations.strokeAt,

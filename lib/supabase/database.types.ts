@@ -50,9 +50,13 @@ export type ErhebungRow = {
   stroke_status: "nicht entschieden" | "Ja" | "Kein Stroke";
   stroke_initial_at: Timestamp | null;
   stroke_last_at: Timestamp | null;
+  stroke_after_completion_status: "Ja" | "Kein Stroke" | null;
+  stroke_after_completion_at: Timestamp | null;
   lyse_status: "nicht entschieden" | "Ja" | "Keine Lyse";
   lyse_initial_at: Timestamp | null;
   lyse_last_at: Timestamp | null;
+  lyse_after_completion_status: "Ja" | "Keine Lyse" | null;
+  lyse_after_completion_at: Timestamp | null;
   nihss: number;
   g_fast: number;
   timeline: string;
@@ -154,9 +158,13 @@ export type ErhebungInsert = {
   stroke_status?: ErhebungRow["stroke_status"];
   stroke_initial_at?: Timestamp | null;
   stroke_last_at?: Timestamp | null;
+  stroke_after_completion_status?: ErhebungRow["stroke_after_completion_status"];
+  stroke_after_completion_at?: Timestamp | null;
   lyse_status?: ErhebungRow["lyse_status"];
   lyse_initial_at?: Timestamp | null;
   lyse_last_at?: Timestamp | null;
+  lyse_after_completion_status?: ErhebungRow["lyse_after_completion_status"];
+  lyse_after_completion_at?: Timestamp | null;
   nihss?: number;
   g_fast?: number;
   timeline?: string;
@@ -173,9 +181,13 @@ export type ErhebungInsert = {
     | "stroke_status"
     | "stroke_initial_at"
     | "stroke_last_at"
+    | "stroke_after_completion_status"
+    | "stroke_after_completion_at"
     | "lyse_status"
     | "lyse_initial_at"
     | "lyse_last_at"
+    | "lyse_after_completion_status"
+    | "lyse_after_completion_at"
     | "nihss"
     | "g_fast"
     | "timeline"

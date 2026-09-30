@@ -216,6 +216,64 @@ export function applyMissingFieldsAsNormal(args: {
   return { erhebung: current, ereignisse };
 }
 
+export const AFTER_COMPLETION_EREIGNIS_TYP = "click_after_completion";
+
+export function applyAfterCompletionClick(args: {
+  erhebung: ErhebungRow;
+  field: ClickableField;
+  option: NihssOption;
+  now: Date;
+}): {
+  erhebung: ErhebungRow;
+  ereignisse: EreignisInsert[];
+} {
+  const { field, option, now } = args;
+  const kind =
+    field.key === "stroke" || field.key === "stroke_after_completion"
+      ? "stroke"
+      : field.key === "lyse" || field.key === "lyse_after_completion"
+        ? "lyse"
+        : null;
+  if (!kind) {
+    throw new Error("Nach NIHSS sind nur Stroke- und Lyse-Klicks zulässig.");
+  }
+  if (option.value === "nicht entschieden") {
+    throw new Error("Nach NIHSS ist „nicht entschieden“ nicht zulässig.");
+  }
+
+  const next: ErhebungRow = { ...args.erhebung };
+  const nowIso = now.toISOString();
+
+  if (kind === "stroke") {
+    next.stroke_after_completion_status = option.value as ErhebungRow["stroke_after_completion_status"];
+    next.stroke_after_completion_at = nowIso;
+  } else {
+    next.lyse_after_completion_status = option.value as ErhebungRow["lyse_after_completion_status"];
+    next.lyse_after_completion_at = nowIso;
+  }
+
+  const feldKey = `${kind}_after_completion`;
+  const feldLabel = `${kind === "stroke" ? "Stroke" : "Lyse"} nach NIHSS`;
+  next.timeline = appendTimelineLine(
+    next.timeline,
+    formatTimelineLine(now, feldLabel, option.label),
+  );
+
+  return {
+    erhebung: next,
+    ereignisse: [
+      {
+        erhebung_id: next.id,
+        feld_key: feldKey,
+        feld_label: feldLabel,
+        wert_label: option.label,
+        wert_score: option.score,
+        ereignis_typ: AFTER_COMPLETION_EREIGNIS_TYP,
+      },
+    ],
+  };
+}
+
 export function applyLifecycleEvent(args: {
   erhebung: ErhebungRow;
   now: Date;

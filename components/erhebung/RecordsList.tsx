@@ -10,6 +10,10 @@ import ExamElapsedClock from "@/components/erhebung/ExamElapsedClock";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
 import { getDecisionClocks } from "@/lib/nihss/duration";
 
+function afterCompletionStatus(value: string | null): string {
+  return value ?? "–";
+}
+
 const DELETE_CONFIRMATION =
   "Diese Erhebung wirklich löschen? Sie wird ausgeblendet, bleibt aber in der Datenbank erhalten.";
 
@@ -172,7 +176,12 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
               />
             </p>
             <p className="text-sm">
-              Stroke: {row.stroke_status} · Lyse: {row.lyse_status}
+              Stroke: {row.stroke_status} · Stroke nach kompletter Untersuchung:{" "}
+              {afterCompletionStatus(row.stroke_after_completion_status)}
+            </p>
+            <p className="text-sm">
+              Lyse: {row.lyse_status} · Lyse nach kompletter Untersuchung:{" "}
+              {afterCompletionStatus(row.lyse_after_completion_status)}
             </p>
             <RecordActions
               id={row.id}
@@ -199,7 +208,13 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
               <th className="px-3 py-2 font-semibold">NIHSS</th>
               <th className="px-3 py-2 font-semibold">G-FAST</th>
               <th className="px-3 py-2 font-semibold">Stroke</th>
+              <th className="px-3 py-2 font-semibold">
+                Stroke nach kompletter Untersuchung
+              </th>
               <th className="px-3 py-2 font-semibold">Lyse</th>
+              <th className="px-3 py-2 font-semibold">
+                Lyse nach kompletter Untersuchung
+              </th>
               <th className="px-3 py-2 font-semibold">Aktion</th>
             </tr>
           </thead>
@@ -244,7 +259,13 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
                 <td className="whitespace-nowrap px-3 py-2">
                   {row.stroke_status}
                 </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {afterCompletionStatus(row.stroke_after_completion_status)}
+                </td>
                 <td className="whitespace-nowrap px-3 py-2">{row.lyse_status}</td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {afterCompletionStatus(row.lyse_after_completion_status)}
+                </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   <RecordActions
                     id={row.id}

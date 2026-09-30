@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import AfterCompletionDialog from "@/components/erhebung/AfterCompletionDialog";
 import ExamViewToggle from "@/components/erhebung/ExamViewToggle";
 import FieldOptions from "@/components/erhebung/FieldOptions";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
@@ -25,6 +26,7 @@ import {
   type ScoreColor,
 } from "@/lib/nihss/config";
 import {
+  applyAfterCompletionClick,
   applyFieldClick,
   applyLifecycleEvent,
   applyMissingFieldsAsNormal,
@@ -127,6 +129,9 @@ export default function ErhebungWorkspace({
   const [erhebung, setErhebung] = useState(initialErhebung);
   const [error, setError] = useState<string | null>(null);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [afterCompletionOpen, setAfterCompletionOpen] = useState(false);
+  const [popupStroke, setPopupStroke] = useState<string | null>(null);
+  const [popupLyse, setPopupLyse] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [toasts, setToasts] = useState<WarningToast[]>([]);
@@ -267,6 +272,7 @@ export default function ErhebungWorkspace({
       }
 
       autoCloseLockRef.current = true;
+      setAfterCompletionOpen(false);
       setCloseDialogOpen(false);
       const result = applyLifecycleEvent({
         erhebung: current,
@@ -332,7 +338,36 @@ export default function ErhebungWorkspace({
       return;
     }
 
-    setCloseDialogOpen(true);
+    setPopupStroke(null);
+    setPopupLyse(null);
+    setAfterCompletionOpen(true);
+  }
+
+  async function handleAfterCompletionSelect(
+    field: ClickableField,
+    value: string,
+  ) {
+    if (readOnly) {
+      return;
+    }
+
+    const option = findOption(field, value);
+    if (!option) {
+      return;
+    }
+
+    const result = applyAfterCompletionClick({
+      erhebung,
+      field,
+      option,
+      now: new Date(),
+    });
+    if (field.key.startsWith("stroke")) {
+      setPopupStroke(value);
+    } else {
+      setPopupLyse(value);
+    }
+    await persist(result.erhebung, result.ereignisse);
   }
 
   async function confirmStop() {
@@ -420,6 +455,43 @@ export default function ErhebungWorkspace({
               ? ` Untersuchung um ${formatBerlinTime(new Date(erhebung.endzeit_untersuchung))} beendet.`
               : ""}
           </p>
+        ) : null}
+
+        {erhebung.stroke_after_completion_status ||
+        erhebung.lyse_after_completion_status ? (
+          <p className="rounded-lg bg-tempis-ice px-3 py-2 text-sm">
+            Hypothetische Entscheidung nach NIHSS
+            {erhebung.stroke_after_completion_status
+              ? `: Stroke ${erhebung.stroke_after_completion_status}`
+              : ""}
+            {erhebung.lyse_after_completion_status
+              ? `${erhebung.stroke_after_completion_status ? " ·" : ":"} Lyse ${erhebung.lyse_after_completion_status}`
+              : ""}
+            .
+          </p>
+        ) : null}
+
+        {afterCompletionOpen ? (
+          <AfterCompletionDialog
+            erhebung={{
+              ...erhebung,
+              stroke_after_completion_status:
+                popupStroke === "Ja" || popupStroke === "Kein Stroke"
+                  ? popupStroke
+                  : null,
+              lyse_after_completion_status:
+                popupLyse === "Ja" || popupLyse === "Keine Lyse"
+                  ? popupLyse
+                  : null,
+            }}
+            canContinue={Boolean(popupStroke && popupLyse)}
+            onSelect={handleAfterCompletionSelect}
+            onContinue={() => {
+              setAfterCompletionOpen(false);
+              setCloseDialogOpen(true);
+            }}
+            onCancel={() => setAfterCompletionOpen(false)}
+          />
         ) : null}
 
         {closeDialogOpen ? (
