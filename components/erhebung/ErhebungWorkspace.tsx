@@ -16,7 +16,7 @@ import WarningToasts, {
   type WarningToast,
 } from "@/components/erhebung/WarningToasts";
 import optionStyles from "@/components/nihss_items/nihssOptions.module.css";
-import { persistErhebungAndEreignisse } from "@/lib/db/erhebungen";
+import { useQueuedPersist } from "@/components/erhebung/useQueuedPersist";
 import {
   FORM_SECTIONS,
   LYSE_FIELD,
@@ -63,6 +63,7 @@ import {
   isExamLongerThan60Minutes,
   isRapidRepeatClick,
 } from "@/lib/nihss/validation-exam";
+import { compactFieldRows, type ExamViewMode } from "@/lib/nihss/exam-view";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
 type ErhebungWorkspaceProps = {
@@ -91,6 +92,54 @@ function fieldFrameClass(color: ScoreColor | null): string {
   };
 
   return frames[color];
+}
+
+function NihssFieldBlock({
+  field,
+  erhebung,
+  readOnly,
+  viewMode,
+  onSelect,
+}: {
+  field: ClickableField;
+  erhebung: ErhebungRow;
+  readOnly: boolean;
+  viewMode: ExamViewMode;
+  onSelect: (field: ClickableField, value: string) => void;
+}) {
+  const selectionColor = getSelectedFieldColor(field, erhebung);
+  const frameColorClass = fieldFrameClass(selectionColor);
+  const compact = viewMode === "compact";
+
+  return (
+    <div
+      className={`min-w-0 space-y-2 ${optionStyles.fieldFrame} ${frameColorClass} ${
+        compact ? "h-full" : ""
+      }`}
+    >
+      <h3
+        className={
+          compact ? "text-sm font-semibold leading-snug md:text-xs" : "text-sm font-semibold"
+        }
+      >
+        {field.label}
+      </h3>
+      {field.selection === "multiple" ? (
+        <p className="text-xs text-muted">Mehrfachauswahl möglich</p>
+      ) : null}
+      <FieldOptions
+        field={field}
+        erhebung={erhebung}
+        readOnly={readOnly}
+        viewMode={viewMode}
+        compact={
+          field.selection === "multiple" ||
+          field.options.every((option) => option.color === "side")
+        }
+        onSelect={onSelect}
+      />
+    </div>
+  );
 }
 
 function closeDialogMessage(args: {
@@ -171,7 +220,6 @@ export default function ErhebungWorkspace({
   const [strokeLyseOrderOpen, setStrokeLyseOrderOpen] = useState(false);
   const [popupStroke, setPopupStroke] = useState<string | null>(null);
   const [popupLyse, setPopupLyse] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [toasts, setToasts] = useState<WarningToast[]>([]);
   const { mode: viewMode, setMode: setViewMode } = useExamViewMode();
@@ -183,6 +231,8 @@ export default function ErhebungWorkspace({
   const erhebungRef = useRef(erhebung);
   const autoCloseLockRef = useRef(false);
   const followupTextTimerRef = useRef<number | null>(null);
+  const { persistQueued, saveStatus, saveError, isSaving } =
+    useQueuedPersist(initialErhebung);
   erhebungRef.current = erhebung;
 
   const followupClosed = erhebung.followup_status === "abgeschlossen";
@@ -269,27 +319,14 @@ export default function ErhebungWorkspace({
 
   async function persist(
     next: ErhebungRow,
-    ereignisse: Parameters<typeof persistErhebungAndEreignisse>[1],
+    ereignisse: Parameters<typeof persistQueued>[1],
     silent = false,
   ) {
     setErhebung(next);
     if (!silent) {
-      setIsSaving(true);
+      setError(null);
     }
-    setError(null);
-    try {
-      await persistErhebungAndEreignisse(next, ereignisse);
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "Speichern fehlgeschlagen. Bitte erneut klicken.",
-      );
-    } finally {
-      if (!silent) {
-        setIsSaving(false);
-      }
-    }
+    await persistQueued(next, ereignisse, silent);
   }
 
   useEffect(() => {
@@ -619,6 +656,21 @@ export default function ErhebungWorkspace({
           </p>
         ) : null}
 
+        {saveError ? (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-tempis-signal/30 bg-surface px-3 py-2 text-sm text-tempis-signal">
+            <p>{saveError}</p>
+            <button
+              type="button"
+              onClick={() => {
+                void persistQueued(erhebungRef.current, []);
+              }}
+              className="rounded-lg bg-tempis-blue-dark px-3 py-1.5 font-semibold text-white hover:bg-tempis-blue-darker"
+            >
+              Erneut speichern
+            </button>
+          </div>
+        ) : null}
+
         {!readOnly ? (
           <div className="flex flex-wrap gap-3">
             <button
@@ -852,35 +904,30 @@ export default function ErhebungWorkspace({
                   <p className="mt-1 text-sm text-muted">{section.prompt}</p>
                 ) : null}
               </div>
-              {fields.map((field) => {
-                const selectionColor = getSelectedFieldColor(field, erhebung);
-                const frameColorClass = fieldFrameClass(selectionColor);
-
-                return (
-                  <div
-                    key={field.key}
-                    className={`space-y-2 ${optionStyles.fieldFrame} ${frameColorClass}`}
-                  >
-                    <h3 className="text-sm font-semibold">{field.label}</h3>
-                    {field.selection === "multiple" ? (
-                      <p className="text-xs text-muted">
-                        Mehrfachauswahl möglich
-                      </p>
-                    ) : null}
-                    <FieldOptions
+              {(viewMode === "compact"
+                ? compactFieldRows(fields)
+                : fields.map((field) => [field])
+              ).map((row) => (
+                <div
+                  key={row.map((field) => field.key).join("-")}
+                  className={
+                    row.length === 2
+                      ? "grid grid-cols-1 items-stretch gap-2 md:grid-cols-2"
+                      : undefined
+                  }
+                >
+                  {row.map((field) => (
+                    <NihssFieldBlock
+                      key={field.key}
                       field={field}
                       erhebung={erhebung}
                       readOnly={readOnly}
                       viewMode={viewMode}
-                      compact={
-                        field.selection === "multiple" ||
-                        field.options.every((option) => option.color === "side")
-                      }
                       onSelect={handleSelect}
                     />
-                  </div>
-                );
-              })}
+                  ))}
+                </div>
+              ))}
             </section>
           );
         })}
@@ -975,15 +1022,32 @@ export default function ErhebungWorkspace({
         <ScrollToTopButton className="bottom-4" />
       )}
 
-      {isSaving ? (
+      {saveStatus === "saving" || saveStatus === "saved" || saveStatus === "error" ? (
         <p
-          className={`pointer-events-none fixed left-1/2 z-[60] -translate-x-1/2 rounded-full bg-tempis-blue-dark px-4 py-2 text-sm font-semibold text-white shadow-lg ${
+          role={saveStatus === "error" ? "button" : undefined}
+          tabIndex={saveStatus === "error" ? 0 : undefined}
+          onClick={
+            saveStatus === "error"
+              ? () => {
+                  void persistQueued(erhebungRef.current, []);
+                }
+              : undefined
+          }
+          className={`fixed left-1/2 z-[60] -translate-x-1/2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg ${
+            saveStatus === "error"
+              ? "pointer-events-auto cursor-pointer bg-tempis-signal"
+              : "pointer-events-none bg-tempis-blue-dark"
+          } ${
             readOnly
               ? "bottom-4"
               : "bottom-[calc(3.75rem+env(safe-area-inset-bottom))] md:bottom-[calc(4.75rem+env(safe-area-inset-bottom))]"
           }`}
         >
-          Speichert…
+          {saveStatus === "saving"
+            ? "Speichert…"
+            : saveStatus === "saved"
+              ? "Gespeichert"
+              : "Speichern fehlgeschlagen — antippen zum Wiederholen"}
         </p>
       ) : null}
     </div>

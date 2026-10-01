@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { erhebungUpdatePatch } from "@/lib/db/erhebung-patch";
 import { getDecisionDurations } from "@/lib/nihss/duration";
 import { calculateGfast, withDerivedScores } from "@/lib/nihss/scoring";
 import type {
@@ -176,11 +177,20 @@ export async function insertEreignis(values: EreignisInsert): Promise<void> {
 export async function persistErhebungAndEreignisse(
   erhebung: ErhebungRow,
   ereignisse: EreignisInsert[],
+  previous?: ErhebungRow,
 ): Promise<void> {
-  const values: ErhebungUpdate = { ...erhebung };
-  delete values.id;
-  delete values.created_at;
-  await updateErhebung(erhebung.id, values);
+  const values: ErhebungUpdate = previous
+    ? erhebungUpdatePatch(previous, erhebung)
+    : (() => {
+        const next: ErhebungUpdate = { ...erhebung };
+        delete next.id;
+        delete next.created_at;
+        return next;
+      })();
+
+  if (Object.keys(values).length > 0) {
+    await updateErhebung(erhebung.id, values);
+  }
 
   if (ereignisse.length === 0) {
     return;

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  compactFieldRows,
   fieldOptionsLayout,
   isExamWorkspacePath,
   resolveExamViewMode,
@@ -45,11 +46,11 @@ describe("fieldOptionsLayout", () => {
     );
   });
 
-  it("uses a two-column grid for form fields in compact view", () => {
-    assert.equal(fieldOptionsLayout({ viewMode: "compact" }), "grid");
+  it("stacks form-field options in compact view", () => {
+    assert.equal(fieldOptionsLayout({ viewMode: "compact" }), "stack");
     assert.equal(
       fieldOptionsLayout({ viewMode: "compact", compact: true }),
-      "grid",
+      "stack",
     );
   });
 
@@ -63,6 +64,28 @@ describe("fieldOptionsLayout", () => {
       "wrap",
     );
     assert.equal(fieldOptionsLayout({ viewMode: "normal" }), "stack");
+  });
+});
+
+describe("compactFieldRows", () => {
+  it("places two fields side by side", () => {
+    assert.deepEqual(compactFieldRows(["nihss_5a", "nihss_5b"]), [
+      ["nihss_5a", "nihss_5b"],
+    ]);
+    assert.deepEqual(compactFieldRows(["nihss_9_grob", "nihss_10"]), [
+      ["nihss_9_grob", "nihss_10"],
+    ]);
+  });
+
+  it("keeps a single field full width", () => {
+    assert.deepEqual(compactFieldRows(["nihss_1a"]), [["nihss_1a"]]);
+  });
+
+  it("puts an odd first field full width, then pairs the rest", () => {
+    assert.deepEqual(
+      compactFieldRows(["nihss_7", "ataxie_rechts", "ataxie_links"]),
+      [["nihss_7"], ["ataxie_rechts", "ataxie_links"]],
+    );
   });
 });
 

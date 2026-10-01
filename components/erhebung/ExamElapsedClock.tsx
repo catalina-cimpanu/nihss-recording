@@ -16,16 +16,22 @@ export default function ExamElapsedClock({
   className,
   title = "Seit Untersuchungsstart",
 }: ExamElapsedClockProps) {
-  const [now, setNow] = useState(() => Date.now());
+  const [mounted, setMounted] = useState(false);
+  const [now, setNow] = useState(0);
 
   useEffect(() => {
-    if (!startAt || endAt) {
+    setMounted(true);
+    setNow(Date.now());
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || !startAt || endAt) {
       return;
     }
 
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
-  }, [startAt, endAt]);
+  }, [mounted, startAt, endAt]);
 
   if (!startAt) {
     return null;
@@ -37,10 +43,15 @@ export default function ExamElapsedClock({
   }
 
   const endMs = endAt ? new Date(endAt).getTime() : now;
-  const elapsedMs = Number.isFinite(endMs) ? endMs - startMs : 0;
+  const elapsedMs =
+    endAt && Number.isFinite(endMs)
+      ? Math.max(0, endMs - startMs)
+      : mounted
+        ? Math.max(0, endMs - startMs)
+        : 0;
 
   return (
-    <span className={className} title={title}>
+    <span className={className} title={title} suppressHydrationWarning>
       {formatElapsedClock(elapsedMs)}
     </span>
   );

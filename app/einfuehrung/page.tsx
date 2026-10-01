@@ -25,8 +25,8 @@ export default function EinfuehrungPage() {
             Lyse-Entscheidung, <strong>Untersuchung beenden</strong>).
           </li>
           <li>
-            Der Start der Untersuchung in der App entspricht dem Beginn des
-            Videokonsils (sobald die Videoverbindung hergestellt ist). Eine
+            Der Start der Untersuchung in der App entspricht nicht automatischdem Beginn des
+            Videokonsils (sobald die Videoverbindung hergestellt ist), sondern dem Start der Untersuchung. Eine
             etwaige Erhebung oder Vervollständigung der Anamnese erfolgt erst
             nach Beendigung der Untersuchung.
           </li>
@@ -43,10 +43,26 @@ export default function EinfuehrungPage() {
             <strong className="underline">nach</strong> vollständiger
             NIHSS-Erhebung angeben — ebenfalls hypothetisch, nur anhand des
             klinischen Befunds. Diese Angabe wird getrennt von den Klicks
-            während der Untersuchung gespeichert. Danach können optionale
-            Angaben zum Konsil ergänzt oder übersprungen werden. Die
-            Untersuchung ist dann abgeschlossen; die Konsilangaben bleiben
-            änderbar, bis <strong>Erhebung abschließen</strong> gewählt wird.
+            während der Untersuchung gespeichert. Danach bestätigen Sie{" "}
+            <strong>Untersuchung beenden</strong>. Die NIHSS-Angaben sind dann
+            nur noch lesbar.
+          </li>
+          <li>
+            Anschließend erscheinen die Angaben zum Konsil. Mit{" "}
+            <strong>Nur speichern</strong> bleiben sie auf der Erhebungsseite
+            änderbar. Mit <strong>Erhebung speichern und abschließen</strong>{" "}
+            (oder dem gleichnamigen Button auf der Seite) werden die
+            Konsilangaben gesperrt.
+          </li>
+          <li>
+            Wird Lyse vor Stroke dokumentiert, muss gewählt werden: verklickt
+            (Lyse zurücksetzen) oder beide gleichzeitig (Stroke → Lyse als 0
+            Sek.).
+          </li>
+          <li>
+            Bei Kontraindikationen nach der Untersuchung kann{" "}
+            <strong>Keine</strong> gewählt werden, wenn keine weiteren bekannt
+            geworden sind.
           </li>
           <li>
             Nach <strong>Erhebung erstellen</strong> können Solo-Patienten-ID
