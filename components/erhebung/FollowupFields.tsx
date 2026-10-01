@@ -108,7 +108,6 @@ function KontraindikationReasons({
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-xs text-muted">Welche? Mehrfachauswahl möglich</p>
       {mode === "post" ? (
         <p className="text-xs text-muted">
           Bereits vor der Untersuchung angegebene Kontraindikationen sind mit
@@ -116,6 +115,21 @@ function KontraindikationReasons({
           möglich.
         </p>
       ) : null}
+      {mode === "post" ? (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange({ lyse_ki_keine: !values.lyse_ki_keine })}
+          className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+            values.lyse_ki_keine
+              ? "bg-tempis-sage-dark text-white"
+              : "border border-border"
+          }`}
+        >
+          Keine
+        </button>
+      ) : null}
+      <p className="text-xs text-muted">Welche? Mehrfachauswahl möglich</p>
       {kontraindikationFields().map((item) => {
         const checked = Boolean(values[item.flag]);
         const timing = values[item.timing];
@@ -131,7 +145,7 @@ function KontraindikationReasons({
                 type="checkbox"
                 className="mt-1"
                 checked={checked}
-                disabled={disabled || lockedVor}
+                disabled={disabled || lockedVor || values.lyse_ki_keine}
                 onChange={(event) => {
                   const nextChecked = event.target.checked;
                   onChange({
@@ -303,7 +317,7 @@ export default function FollowupFields({
 
           <QuestionFrame
             title="Sind während oder nach der Untersuchung weitere(n) Lyse-Kontraindikation(en) bekannt geworden?"
-            filled={hasNachKi(values)}
+            filled={hasNachKi(values) || Boolean(values.lyse_ki_keine)}
           >
             <KontraindikationReasons
               values={values}

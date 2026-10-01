@@ -56,6 +56,9 @@ export function missingFollowupLabels(values: FollowupValues): string[] {
   ) {
     missing.push("Beschreibung zur Lyse-Beeinflussung");
   }
+  if (!values.lyse_ki_keine && !hasNachKi(values)) {
+    missing.push("Lyse-Kontraindikation nach Untersuchung");
+  }
   const hasUmstand =
     values.umstaende_keine ||
     UMSTAENDE.some((item) => Boolean(values[item.flag]));

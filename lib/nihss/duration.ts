@@ -10,6 +10,7 @@ export type DurationInput = Pick<
   | "lyse_status"
   | "lyse_initial_at"
   | "lyse_last_at"
+  | "stroke_lyse_gleichzeitig"
 >;
 
 export type DecisionDurations = {
@@ -107,25 +108,44 @@ function isLyseDecided(status: ErhebungRow["lyse_status"]): boolean {
   return status === "Ja" || status === "Keine Lyse";
 }
 
-export function getDecisionDurations(row: DurationInput): DecisionDurations {
-  const strokeAt = isStrokeDecided(row.stroke_status)
-    ? row.stroke_last_at ?? row.stroke_initial_at
-    : null;
-  const lyseAt = isLyseDecided(row.lyse_status)
-    ? row.lyse_last_at ?? row.lyse_initial_at
-    : null;
+function decisionTimes(row: DurationInput): {
+  strokeAt: string | null;
+  lyseAt: string | null;
+} {
+  return {
+    strokeAt: isStrokeDecided(row.stroke_status)
+      ? row.stroke_last_at ?? row.stroke_initial_at
+      : null,
+    lyseAt: isLyseDecided(row.lyse_status)
+      ? row.lyse_last_at ?? row.lyse_initial_at
+      : null,
+  };
+}
 
+export function isLyseBeforeStroke(row: DurationInput): boolean {
+  const { strokeAt, lyseAt } = decisionTimes(row);
+  const strokeMs = parseTimestamp(strokeAt);
+  const lyseMs = parseTimestamp(lyseAt);
+  return strokeMs != null && lyseMs != null && lyseMs < strokeMs;
+}
+
+export function getDecisionDurations(row: DurationInput): DecisionDurations {
+  const { strokeAt, lyseAt } = decisionTimes(row);
   const startMs = parseTimestamp(row.startzeit_untersuchung);
   const endMs = parseTimestamp(row.endzeit_untersuchung);
   const strokeMs = parseTimestamp(strokeAt);
   const lyseMs = parseTimestamp(lyseAt);
+  const inverted = isLyseBeforeStroke(row);
 
   return {
     strokeAt,
     lyseAt,
     dauer_untersuchung_ms: positiveDiffMs(startMs, endMs),
     dauer_start_zu_stroke_ms: positiveDiffMs(startMs, strokeMs),
-    dauer_stroke_zu_lyse_ms: positiveDiffMs(strokeMs, lyseMs),
+    dauer_stroke_zu_lyse_ms:
+      inverted && row.stroke_lyse_gleichzeitig
+        ? 0
+        : positiveDiffMs(strokeMs, lyseMs),
     dauer_start_zu_lyse_ms: positiveDiffMs(startMs, lyseMs),
   };
 }
@@ -134,16 +154,21 @@ export function getDecisionClocks(row: DurationInput): DecisionClocks {
   const { strokeAt, lyseAt } = getDecisionDurations(row);
   const startAt = row.startzeit_untersuchung;
   const examEnded = Boolean(row.endzeit_untersuchung);
+  const inverted = isLyseBeforeStroke(row);
 
   return {
     startToStroke: {
       startAt: startAt && (!examEnded || strokeAt) ? startAt : null,
       endAt: strokeAt,
     },
-    strokeToLyse: {
-      startAt: strokeAt && (!examEnded || lyseAt) ? strokeAt : null,
-      endAt: lyseAt,
-    },
+    strokeToLyse: inverted
+      ? row.stroke_lyse_gleichzeitig && strokeAt
+        ? { startAt: strokeAt, endAt: strokeAt }
+        : { startAt: null, endAt: null }
+      : {
+          startAt: strokeAt && (!examEnded || lyseAt) ? strokeAt : null,
+          endAt: lyseAt,
+        },
     startToLyse: {
       startAt: startAt && (!examEnded || lyseAt) ? startAt : null,
       endAt: lyseAt,

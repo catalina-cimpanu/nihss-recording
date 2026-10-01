@@ -93,6 +93,31 @@ describe("applyFollowupPatch", () => {
     assert.equal(written.umstaende_sprachbarriere, true);
   });
 
+  it("Keine on nach-KI clears nach options but keeps vor-KI", () => {
+    const none = applyFollowupPatch(
+      row({
+        lyse_ki_oak: true,
+        lyse_ki_oak_timing: KI_TIMING_VOR,
+        lyse_ki_zeitfenster: true,
+        lyse_ki_zeitfenster_timing: KI_TIMING_NACH,
+      }),
+      { lyse_ki_keine: true },
+    );
+    assert.equal(none.lyse_ki_keine, true);
+    assert.equal(none.lyse_ki_oak, true);
+    assert.equal(none.lyse_ki_oak_timing, KI_TIMING_VOR);
+    assert.equal(none.lyse_ki_zeitfenster, false);
+    assert.equal(none.lyse_ki_zeitfenster_timing, null);
+    assert.equal(hasNachKi(none), false);
+
+    const written = applyFollowupPatch(row({ lyse_ki_keine: true }), {
+      lyse_ki_oak: true,
+      lyse_ki_oak_timing: KI_TIMING_NACH,
+    });
+    assert.equal(written.lyse_ki_keine, false);
+    assert.equal(written.lyse_ki_oak, true);
+  });
+
   it("Keine on remarks clears the text; text turns Keine off", () => {
     const none = applyFollowupPatch(row(), { sonstige_anmerkungen_keine: true });
     assert.equal(none.sonstige_anmerkungen, null);

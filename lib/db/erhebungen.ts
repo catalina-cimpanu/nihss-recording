@@ -31,13 +31,14 @@ export type ErhebungListItem = Pick<
 > & {
   stroke_entscheidung_at: string | null;
   lyse_entscheidung_at: string | null;
+  stroke_lyse_gleichzeitig: boolean;
 };
 
 export async function listErhebungen(): Promise<ErhebungListItem[]> {
   const { data, error } = await getSupabaseClient()
     .from("erhebungen")
     .select(
-      "id, created_at, erhebungs_id, untersuchungstyp, untersuchung_status, followup_status, nihss, g_fast, stroke_status, lyse_status, stroke_after_completion_status, lyse_after_completion_status, startzeit_untersuchung, endzeit_untersuchung, stroke_initial_at, stroke_last_at, lyse_initial_at, lyse_last_at, punkte_2, punkte_4, punkte_5a, punkte_5b, punkte_9_grob, punkte_10",
+      "id, created_at, erhebungs_id, untersuchungstyp, untersuchung_status, followup_status, nihss, g_fast, stroke_status, lyse_status, stroke_after_completion_status, lyse_after_completion_status, startzeit_untersuchung, endzeit_untersuchung, stroke_initial_at, stroke_last_at, lyse_initial_at, lyse_last_at, stroke_lyse_gleichzeitig, punkte_2, punkte_4, punkte_5a, punkte_5b, punkte_9_grob, punkte_10",
     )
     .neq("untersuchung_status", "geloescht")
     .order("created_at", { ascending: false });
@@ -66,6 +67,7 @@ export async function listErhebungen(): Promise<ErhebungListItem[]> {
       endzeit_untersuchung: row.endzeit_untersuchung,
       stroke_entscheidung_at: durations.strokeAt,
       lyse_entscheidung_at: durations.lyseAt,
+      stroke_lyse_gleichzeitig: Boolean(row.stroke_lyse_gleichzeitig),
     };
   });
 }

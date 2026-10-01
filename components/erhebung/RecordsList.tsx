@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ErhebungListItem } from "@/lib/db/erhebungen";
 import { softDeleteErhebung } from "@/lib/db/erhebungen";
-import { formatBerlinDateTime } from "@/lib/nihss/timeline";
+import {
+  formatBerlinDate,
+  formatBerlinTime,
+} from "@/lib/nihss/timeline";
 import ExamElapsedClock from "@/components/erhebung/ExamElapsedClock";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
 import { erhebungStatusParts } from "@/lib/nihss/erhebung-status";
@@ -31,6 +34,30 @@ function ErhebungStatus({
 
 function afterCompletionStatus(value: string | null): string {
   return value ?? "–";
+}
+
+function shortErhebungsId(id: string): string {
+  if (id.length <= 10) {
+    return id;
+  }
+  return `${id.slice(0, 10)}...`;
+}
+
+function ErhebungsIdCreatedAt({
+  erhebungsId,
+  createdAt,
+}: {
+  erhebungsId: string;
+  createdAt: string;
+}) {
+  const created = new Date(createdAt);
+  return (
+    <span className="flex flex-col" title={erhebungsId}>
+      <span className="font-medium">{shortErhebungsId(erhebungsId)}</span>
+      <span className="text-muted">{formatBerlinDate(created)}</span>
+      <span className="text-muted">{formatBerlinTime(created)}</span>
+    </span>
+  );
 }
 
 const DELETE_CONFIRMATION =
@@ -69,6 +96,7 @@ function clocksFor(row: ErhebungListItem) {
     lyse_status: row.lyse_status,
     lyse_initial_at: row.lyse_entscheidung_at,
     lyse_last_at: row.lyse_entscheidung_at,
+    stroke_lyse_gleichzeitig: row.stroke_lyse_gleichzeitig,
   });
 }
 
@@ -166,9 +194,13 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
             key={row.id}
             className="space-y-2 rounded-xl border border-border bg-surface p-3"
           >
-            <p className="font-semibold">{row.erhebungs_id}</p>
+            <p className="font-semibold">
+              <ErhebungsIdCreatedAt
+                erhebungsId={row.erhebungs_id}
+                createdAt={row.created_at}
+              />
+            </p>
             <p className="text-sm text-muted">
-              {formatBerlinDateTime(new Date(row.created_at))} ·{" "}
               {row.untersuchungstyp} · <ErhebungStatus row={row} />
             </p>
             <p className="text-sm">
@@ -218,8 +250,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
           <thead className="sticky top-0 z-10 bg-tempis-ice text-xs uppercase tracking-wide text-muted">
             <tr>
               <th className="px-3 py-2 font-semibold">Erhebungs-ID</th>
-              <th className="px-3 py-2 font-semibold">Erstellt am</th>
-              <th className="px-3 py-2 font-semibold">Erhebungstyp</th>
+              <th className="px-3 py-2 font-semibold">Typ</th>
               <th className="px-3 py-2 font-semibold">Status</th>
               <th className="px-3 py-2 font-semibold">Dauer</th>
               <th className="px-3 py-2 font-semibold">Start→Stroke</th>
@@ -242,11 +273,11 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
               const clocks = clocksFor(row);
               return (
               <tr key={row.id} className="border-t border-border">
-                <td className="whitespace-nowrap px-3 py-2 font-medium">
-                  {row.erhebungs_id}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2 text-muted">
-                  {formatBerlinDateTime(new Date(row.created_at))}
+                <td className="px-3 py-2">
+                  <ErhebungsIdCreatedAt
+                    erhebungsId={row.erhebungs_id}
+                    createdAt={row.created_at}
+                  />
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   {row.untersuchungstyp}

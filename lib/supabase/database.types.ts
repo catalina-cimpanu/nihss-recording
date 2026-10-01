@@ -59,6 +59,7 @@ export type ErhebungRow = {
   lyse_last_at: Timestamp | null;
   lyse_after_completion_status: "Ja" | "Keine Lyse" | null;
   lyse_after_completion_at: Timestamp | null;
+  stroke_lyse_gleichzeitig: boolean;
   solo_patienten_id: string | null;
   tempis_stroke_verdacht: "Ja" | "Nein" | null;
   tempis_lyse_empfehlung: "Ja" | "Nein" | null;
@@ -88,6 +89,7 @@ export type ErhebungRow = {
   lyse_ki_sonstige: boolean;
   lyse_ki_sonstige_timing: "vor Untersuchung" | "nach Untersuchung" | null;
   lyse_ki_sonstige_text: string | null;
+  lyse_ki_keine: boolean;
   umstaende_kooperation: boolean;
   umstaende_kooperation_text: string | null;
   umstaende_sprachbarriere: boolean;

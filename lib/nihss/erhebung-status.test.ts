@@ -53,6 +53,7 @@ describe("isFollowupIncomplete", () => {
         lyse_kontraindikation_vor_untersuchung: "Nein",
         tempis_stroke_verdacht: "Ja",
         tempis_lyse_empfehlung: "Nein",
+        lyse_ki_keine: true,
         umstaende_keine: true,
         sonstige_anmerkungen_keine: true,
       }),

@@ -22,6 +22,7 @@ function state(overrides: Partial<DurationInput> = {}): DurationInput {
     lyse_status: "nicht entschieden",
     lyse_initial_at: null,
     lyse_last_at: null,
+    stroke_lyse_gleichzeitig: false,
     ...overrides,
   };
 }
@@ -108,6 +109,23 @@ describe("getDecisionDurations", () => {
     assert.equal(result.dauer_start_zu_stroke_ms, 8 * 60_000);
     assert.equal(result.dauer_stroke_zu_lyse_ms, null);
   });
+
+  it("stores stroke-to-lyse as 0 when simultaneous is confirmed", () => {
+    const result = getDecisionDurations(
+      state({
+        startzeit_untersuchung: "2026-08-27T10:00:00.000Z",
+        stroke_status: "Ja",
+        stroke_last_at: "2026-08-27T10:08:00.000Z",
+        lyse_status: "Ja",
+        lyse_last_at: "2026-08-27T10:04:00.000Z",
+        stroke_lyse_gleichzeitig: true,
+      }),
+    );
+
+    assert.equal(result.dauer_stroke_zu_lyse_ms, 0);
+    assert.equal(result.dauer_start_zu_stroke_ms, 8 * 60_000);
+    assert.equal(result.dauer_start_zu_lyse_ms, 4 * 60_000);
+  });
 });
 
 describe("getDecisionClocks", () => {
@@ -181,6 +199,31 @@ describe("getDecisionClocks", () => {
       startAt: null,
       endAt: null,
     });
+  });
+
+  it("hides stroke-to-lyse when lyse is before stroke unless simultaneous", () => {
+    const inverted = state({
+      startzeit_untersuchung: "2026-08-27T10:00:00.000Z",
+      stroke_status: "Ja",
+      stroke_last_at: "2026-08-27T10:08:00.000Z",
+      lyse_status: "Ja",
+      lyse_last_at: "2026-08-27T10:04:00.000Z",
+    });
+
+    assert.deepEqual(getDecisionClocks(inverted).strokeToLyse, {
+      startAt: null,
+      endAt: null,
+    });
+    assert.deepEqual(
+      getDecisionClocks({
+        ...inverted,
+        stroke_lyse_gleichzeitig: true,
+      }).strokeToLyse,
+      {
+        startAt: "2026-08-27T10:08:00.000Z",
+        endAt: "2026-08-27T10:08:00.000Z",
+      },
+    );
   });
 });
 

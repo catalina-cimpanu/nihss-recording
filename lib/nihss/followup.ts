@@ -127,6 +127,7 @@ export type FollowupValues = Pick<
   | KiFlagName
   | KiTimingName
   | KiTextName
+  | "lyse_ki_keine"
   | "umstaende_kooperation"
   | "umstaende_kooperation_text"
   | "umstaende_sprachbarriere"
@@ -151,6 +152,7 @@ export function emptyFollowupValues(): FollowupValues {
     lyse_kontraindikation_beeinflusst: null,
     lyse_kontraindikation_beeinflusst_text: null,
     ...emptyKiColumns(),
+    lyse_ki_keine: false,
     umstaende_kooperation: false,
     umstaende_kooperation_text: null,
     umstaende_sprachbarriere: false,
@@ -217,6 +219,18 @@ function emptyKiColumns(): Record<KiFlagName, boolean> &
   }
   next.lyse_ki_sonstige_text = null;
   return next;
+}
+
+function clearNachKiReasons(next: ErhebungRow) {
+  for (const item of kontraindikationFields()) {
+    if (next[item.timing] !== KI_TIMING_NACH) {
+      continue;
+    }
+    Object.assign(next, { [item.flag]: false, [item.timing]: null });
+    if (item.text) {
+      Object.assign(next, { [item.text]: null });
+    }
+  }
 }
 
 function clearVorKiReasons(next: ErhebungRow) {
@@ -300,8 +314,14 @@ export function applyFollowupPatch(
     clearVorKiReasons(next);
   }
   applyKiTimingRules(erhebung, next, patch);
+  if (patch.lyse_ki_keine) {
+    next.lyse_ki_keine = true;
+    clearNachKiReasons(next);
+    applyKiTimingRules(erhebung, next, patch);
+  }
   clipKiSonstige(next);
   if (hasNachKi(next)) {
+    next.lyse_ki_keine = false;
     next.lyse_kontraindikation_nach_untersuchung = "Ja";
   } else if (erhebung.lyse_kontraindikation_nach_untersuchung === "Ja") {
     next.lyse_kontraindikation_nach_untersuchung = "Nein";
@@ -414,6 +434,20 @@ export function followupEreignisseFromPatch(
         ),
       );
     }
+  }
+
+  if (
+    "lyse_ki_keine" in patch &&
+    next.lyse_ki_keine !== previous.lyse_ki_keine
+  ) {
+    events.push(
+      followupEreignis(
+        next,
+        "lyse_ki_keine",
+        "Lyse-Kontraindikation nach Untersuchung",
+        next.lyse_ki_keine ? "Keine" : "Nein",
+      ),
+    );
   }
 
   if (

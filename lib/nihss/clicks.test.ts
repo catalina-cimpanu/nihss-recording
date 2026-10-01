@@ -7,6 +7,8 @@ import {
   applyErhebungClose,
   applyFieldClick,
   applyLifecycleEvent,
+  applyStrokeLyseSimultaneous,
+  applyLyseReset,
 } from "@/lib/nihss/clicks";
 
 function row(overrides: Partial<ErhebungRow> = {}): ErhebungRow {
@@ -175,5 +177,69 @@ describe("applyErhebungClose", () => {
 
     const again = applyErhebungClose({ erhebung: closed.erhebung, now });
     assert.equal(again.ereignisse.length, 0);
+  });
+});
+
+describe("applyStrokeLyseSimultaneous", () => {
+  it("marks inverted stroke and lyse as simultaneous 0", () => {
+    const now = new Date("2026-08-27T10:08:00.000Z");
+    const result = applyStrokeLyseSimultaneous({
+      erhebung: row({
+        startzeit_untersuchung: "2026-08-27T10:00:00.000Z",
+        stroke_status: "Ja",
+        stroke_last_at: "2026-08-27T10:08:00.000Z",
+        lyse_status: "Ja",
+        lyse_last_at: "2026-08-27T10:04:00.000Z",
+      }),
+      now,
+    });
+
+    assert.equal(result.erhebung.stroke_lyse_gleichzeitig, true);
+    assert.equal(result.ereignisse[0]?.feld_key, "stroke_lyse_gleichzeitig");
+  });
+
+  it("clears the simultaneous flag when lyse is later than stroke", () => {
+    const option = LYSE_FIELD.options.find((item) => item.value === "Ja");
+    assert.ok(option);
+
+    const result = applyFieldClick({
+      erhebung: row({
+        startzeit_untersuchung: "2026-08-27T10:00:00.000Z",
+        stroke_status: "Ja",
+        stroke_last_at: "2026-08-27T10:04:00.000Z",
+        lyse_status: "Keine Lyse",
+        lyse_last_at: "2026-08-27T10:02:00.000Z",
+        stroke_lyse_gleichzeitig: true,
+      }),
+      field: LYSE_FIELD,
+      option,
+      now: new Date("2026-08-27T10:09:00.000Z"),
+    });
+
+    assert.equal(result.erhebung.stroke_lyse_gleichzeitig, false);
+  });
+});
+
+describe("applyLyseReset", () => {
+  it("clears the Lyse decision so it can be clicked again", () => {
+    const result = applyLyseReset({
+      erhebung: row({
+        startzeit_untersuchung: "2026-08-27T10:00:00.000Z",
+        stroke_status: "Ja",
+        stroke_last_at: "2026-08-27T10:08:00.000Z",
+        lyse_status: "Ja",
+        lyse_initial_at: "2026-08-27T10:04:00.000Z",
+        lyse_last_at: "2026-08-27T10:04:00.000Z",
+        stroke_lyse_gleichzeitig: true,
+      }),
+      now: new Date("2026-08-27T10:08:30.000Z"),
+    });
+
+    assert.equal(result.erhebung.lyse_status, "nicht entschieden");
+    assert.equal(result.erhebung.lyse_initial_at, null);
+    assert.equal(result.erhebung.lyse_last_at, null);
+    assert.equal(result.erhebung.stroke_lyse_gleichzeitig, false);
+    assert.equal(result.erhebung.stroke_status, "Ja");
+    assert.equal(result.ereignisse[0]?.feld_key, "lyse");
   });
 });

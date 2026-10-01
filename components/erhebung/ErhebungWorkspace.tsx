@@ -33,10 +33,13 @@ import {
   applyFieldClick,
   applyLifecycleEvent,
   applyMissingFieldsAsNormal,
+  applyStrokeLyseSimultaneous,
+  applyLyseReset,
 } from "@/lib/nihss/clicks";
 import {
   AUTO_CLOSE_AFTER_MS,
   autoCloseStopAt,
+  isLyseBeforeStroke,
   shouldAutoCloseExam,
 } from "@/lib/nihss/duration";
 import {
@@ -165,6 +168,7 @@ export default function ErhebungWorkspace({
   const [afterCompletionOpen, setAfterCompletionOpen] = useState(false);
   const [followupOpen, setFollowupOpen] = useState(false);
   const [erhebungCloseOpen, setErhebungCloseOpen] = useState(false);
+  const [strokeLyseOrderOpen, setStrokeLyseOrderOpen] = useState(false);
   const [popupStroke, setPopupStroke] = useState<string | null>(null);
   const [popupLyse, setPopupLyse] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -333,7 +337,7 @@ export default function ErhebungWorkspace({
   }, [readOnly, isSaving, erhebung.id, erhebung.startzeit_untersuchung]);
 
   async function handleSelect(field: ClickableField, value: string) {
-    if (readOnly) {
+    if (readOnly || strokeLyseOrderOpen) {
       return;
     }
 
@@ -357,6 +361,37 @@ export default function ErhebungWorkspace({
       now: new Date(),
     });
     await persist(result.erhebung, result.ereignisse);
+    if (
+      (field.key === "stroke" || field.key === "lyse") &&
+      isLyseBeforeStroke(result.erhebung) &&
+      !result.erhebung.stroke_lyse_gleichzeitig
+    ) {
+      setStrokeLyseOrderOpen(true);
+    }
+  }
+
+  async function confirmStrokeLyseSimultaneous() {
+    const result = applyStrokeLyseSimultaneous({
+      erhebung: erhebungRef.current,
+      now: new Date(),
+    });
+    setStrokeLyseOrderOpen(false);
+    if (result.ereignisse.length === 0) {
+      return;
+    }
+    await persist(result.erhebung, result.ereignisse);
+  }
+
+  async function confirmLyseReset() {
+    const result = applyLyseReset({
+      erhebung: erhebungRef.current,
+      now: new Date(),
+    });
+    setStrokeLyseOrderOpen(false);
+    if (result.ereignisse.length === 0) {
+      return;
+    }
+    await persist(result.erhebung, result.ereignisse);
   }
 
   async function handleStart() {
@@ -377,7 +412,7 @@ export default function ErhebungWorkspace({
   }
 
   async function handleStopRequest() {
-    if (readOnly) {
+    if (readOnly || strokeLyseOrderOpen) {
       return;
     }
     if (!erhebung.startzeit_untersuchung) {
@@ -446,7 +481,13 @@ export default function ErhebungWorkspace({
   async function handleFollowupFinish() {
     clearFollowupTextTimer();
     await persist(erhebungRef.current, []);
-    proceedToFinalClose();
+    setFollowupOpen(false);
+  }
+
+  async function handleFollowupSaveAndClose() {
+    clearFollowupTextTimer();
+    void persist(erhebungRef.current, []);
+    setErhebungCloseOpen(true);
   }
 
   async function handleAfterCompletionSelect(
@@ -500,14 +541,17 @@ export default function ErhebungWorkspace({
       kind: "stop",
     });
     await persist(result.erhebung, [result.ereignis]);
+    proceedToFollowup();
   }
 
   async function confirmErhebungClose() {
     if (erhebungRef.current.followup_status === "abgeschlossen") {
       setErhebungCloseOpen(false);
+      setFollowupOpen(false);
       return;
     }
     setErhebungCloseOpen(false);
+    setFollowupOpen(false);
     const result = applyErhebungClose({
       erhebung: erhebungRef.current,
       now: new Date(),
@@ -627,7 +671,7 @@ export default function ErhebungWorkspace({
             }}
             canContinue={Boolean(popupStroke && popupLyse)}
             onSelect={handleAfterCompletionSelect}
-            onContinue={proceedToFollowup}
+            onContinue={proceedToFinalClose}
             onCancel={() => setAfterCompletionOpen(false)}
           />
         ) : null}
@@ -636,11 +680,11 @@ export default function ErhebungWorkspace({
           <FollowupDialog
             values={erhebung}
             onChange={handleFollowupChange}
-            onContinue={() => {
+            onSave={() => {
               void handleFollowupFinish();
             }}
-            onSkip={() => {
-              void handleFollowupFinish();
+            onCloseErhebung={() => {
+              void handleFollowupSaveAndClose();
             }}
           />
         ) : null}
@@ -691,6 +735,43 @@ export default function ErhebungWorkspace({
           </div>
         ) : null}
 
+        {strokeLyseOrderOpen ? (
+          <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-4 md:items-center">
+            <div className="w-full max-w-lg space-y-3 rounded-xl border border-tempis-orange bg-surface p-4 shadow-lg">
+              <p className="text-sm">
+                Lyse wurde vor Stroke dokumentiert. Bitte wählen, wie damit
+                umgegangen werden soll.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void confirmLyseReset();
+                  }}
+                  className="rounded-lg border border-border px-4 py-2 text-left font-semibold"
+                >
+                  Ich habe mich verklickt
+                  <span className="mt-0.5 block text-xs font-medium text-muted">
+                    Lyse-Auswahl zurücksetzen
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void confirmStrokeLyseSimultaneous();
+                  }}
+                  className="rounded-lg bg-tempis-signal px-4 py-2 text-left font-semibold text-white"
+                >
+                  Ich habe beide gleichzeitig entschieden
+                  <span className="mt-0.5 block text-xs font-medium text-white/80">
+                    Stroke → Lyse als 0 Sek. speichern
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {closeDialogOpen ? (
           <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-4 md:items-center">
             <div className="w-full max-w-lg space-y-3 rounded-xl border border-tempis-orange bg-surface p-4 shadow-lg">
@@ -721,7 +802,7 @@ export default function ErhebungWorkspace({
         ) : null}
 
         {erhebungCloseOpen ? (
-          <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-4 md:items-center">
+          <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-4 md:items-center">
             <div className="w-full max-w-lg space-y-3 rounded-xl border border-tempis-orange bg-surface p-4 shadow-lg">
               <ErhebungCloseWarningBody
                 values={{ ...emptyFollowupValues(), ...erhebung }}

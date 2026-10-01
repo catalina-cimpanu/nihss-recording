@@ -8,6 +8,7 @@ import {
 } from "@/lib/nihss/config";
 import { calculateGfast, calculateNihss } from "@/lib/nihss/scoring";
 import { appendTimelineLine, formatTimelineLine } from "@/lib/nihss/timeline";
+import { isLyseBeforeStroke } from "@/lib/nihss/duration";
 import { hasRealAtaxiaLimbFinding } from "@/lib/nihss/validation-exam";
 
 function setColumn<K extends keyof ErhebungRow>(
@@ -120,6 +121,13 @@ export function applyFieldClick(args: {
     next.timeline,
     formatTimelineLine(now, field.label, timelineValue),
   );
+
+  if (
+    (field.key === "stroke" || field.key === "lyse") &&
+    !isLyseBeforeStroke(next)
+  ) {
+    next.stroke_lyse_gleichzeitig = false;
+  }
 
   const ereignis: EreignisInsert = {
     erhebung_id: next.id,
@@ -269,6 +277,75 @@ export function applyAfterCompletionClick(args: {
         wert_label: option.label,
         wert_score: option.score,
         ereignis_typ: AFTER_COMPLETION_EREIGNIS_TYP,
+      },
+    ],
+  };
+}
+
+export function applyStrokeLyseSimultaneous(args: {
+  erhebung: ErhebungRow;
+  now: Date;
+}): { erhebung: ErhebungRow; ereignisse: EreignisInsert[] } {
+  if (!isLyseBeforeStroke(args.erhebung) || args.erhebung.stroke_lyse_gleichzeitig) {
+    return { erhebung: args.erhebung, ereignisse: [] };
+  }
+
+  const next: ErhebungRow = {
+    ...args.erhebung,
+    stroke_lyse_gleichzeitig: true,
+  };
+  const wertLabel = "gleichzeitig (0 Sek.)";
+  next.timeline = appendTimelineLine(
+    next.timeline,
+    formatTimelineLine(args.now, "Stroke → Lyse", wertLabel),
+  );
+
+  return {
+    erhebung: next,
+    ereignisse: [
+      {
+        erhebung_id: next.id,
+        feld_key: "stroke_lyse_gleichzeitig",
+        feld_label: "Stroke → Lyse",
+        wert_label: wertLabel,
+        wert_score: null,
+        ereignis_typ: "click",
+      },
+    ],
+  };
+}
+
+export function applyLyseReset(args: {
+  erhebung: ErhebungRow;
+  now: Date;
+}): { erhebung: ErhebungRow; ereignisse: EreignisInsert[] } {
+  if (args.erhebung.lyse_status === "nicht entschieden") {
+    return { erhebung: args.erhebung, ereignisse: [] };
+  }
+
+  const next: ErhebungRow = {
+    ...args.erhebung,
+    lyse_status: "nicht entschieden",
+    lyse_initial_at: null,
+    lyse_last_at: null,
+    stroke_lyse_gleichzeitig: false,
+  };
+  const wertLabel = "nicht entschieden (Korrektur)";
+  next.timeline = appendTimelineLine(
+    next.timeline,
+    formatTimelineLine(args.now, "Lyse", wertLabel),
+  );
+
+  return {
+    erhebung: next,
+    ereignisse: [
+      {
+        erhebung_id: next.id,
+        feld_key: "lyse",
+        feld_label: "Lyse",
+        wert_label: wertLabel,
+        wert_score: null,
+        ereignis_typ: "click",
       },
     ],
   };

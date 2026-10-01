@@ -10,6 +10,15 @@ export function formatBerlinTime(date: Date): string {
   return berlinTimeFormatter.format(date);
 }
 
+export function formatBerlinDate(date: Date): string {
+  return new Intl.DateTimeFormat("de-DE", {
+    timeZone: "Europe/Berlin",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
 export function formatBerlinDateTime(date: Date): string {
   return new Intl.DateTimeFormat("de-DE", {
     timeZone: "Europe/Berlin",
