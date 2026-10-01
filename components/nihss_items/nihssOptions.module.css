@@ -67,11 +67,11 @@
 .optionButton.stopExamButton {
   width: auto;
   min-width: 0;
-  min-height: 1.55rem;
+  min-height: 2rem;
   flex: 1 1 0;
-  padding: 0.12rem 0.2rem;
+  padding: 0.06rem 0.12rem;
   text-align: center;
-  font-size: clamp(0.56rem, 2.2vw, 0.72rem);
+  font-size: clamp(0.7rem, 2.8vw, 0.82rem);
   line-height: 1.15;
   border-radius: 0.4rem;
 }

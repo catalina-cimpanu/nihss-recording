@@ -38,7 +38,7 @@ export default function ExamViewToggle({
             type="button"
             aria-pressed={selected}
             onClick={() => onChange(option.value)}
-            className={`flex items-center justify-center rounded-[0.28rem] px-2.5 text-[clamp(0.56rem,2.2vw,0.72rem)] font-semibold leading-[1.15] md:px-3 md:text-[0.85rem] ${
+            className={`flex min-w-0 flex-1 items-center justify-center rounded-[0.28rem] px-1.5 text-[clamp(0.7rem,2.8vw,0.82rem)] font-semibold leading-[1.15] md:px-3 md:text-[0.85rem] ${
               selected
                 ? "bg-tempis-blue-dark text-white shadow-sm"
                 : "text-tempis-blue-darker/70 hover:text-tempis-blue-darker"
