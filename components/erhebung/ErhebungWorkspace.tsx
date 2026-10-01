@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import AfterCompletionDialog from "@/components/erhebung/AfterCompletionDialog";
+import AppDialog from "@/components/erhebung/AppDialog";
 import FollowupDialog from "@/components/erhebung/FollowupDialog";
 import FollowupFields from "@/components/erhebung/FollowupFields";
 import ExamViewToggle from "@/components/erhebung/ExamViewToggle";
@@ -47,6 +48,11 @@ import {
   emptyFollowupValues,
   type FollowupValues,
 } from "@/lib/nihss/followup";
+import {
+  closeFlowStep,
+  formatCloseFlowStep,
+  type CloseFlowStage,
+} from "@/lib/nihss/close-flow";
 import {
   erhebungCloseConfirmQuestion,
   missingFollowupLabels,
@@ -169,6 +175,7 @@ export default function ErhebungWorkspace({
   const [followupOpen, setFollowupOpen] = useState(false);
   const [erhebungCloseOpen, setErhebungCloseOpen] = useState(false);
   const [strokeLyseOrderOpen, setStrokeLyseOrderOpen] = useState(false);
+  const [closeFlowHasWarning, setCloseFlowHasWarning] = useState(false);
   const [popupStroke, setPopupStroke] = useState<string | null>(null);
   const [popupLyse, setPopupLyse] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
@@ -409,10 +416,12 @@ export default function ErhebungWorkspace({
     }
 
     if (needsIncompleteWarning || needsDecisionWarning) {
+      setCloseFlowHasWarning(true);
       setWarningDialogOpen(true);
       return;
     }
 
+    setCloseFlowHasWarning(false);
     proceedToAfterCompletion();
   }
 
@@ -572,6 +581,10 @@ export default function ErhebungWorkspace({
     return map;
   }, []);
 
+  function closeStepLabel(stage: CloseFlowStage): string {
+    return formatCloseFlowStep(closeFlowStep(stage, closeFlowHasWarning));
+  }
+
   return (
     <div>
       <div className="sticky top-0 z-50 md:top-[var(--app-header-height,2.5rem)]">
@@ -673,6 +686,7 @@ export default function ErhebungWorkspace({
                   : null,
             }}
             canContinue={Boolean(popupStroke && popupLyse)}
+            stepLabel={closeStepLabel("afterCompletion")}
             onSelect={handleAfterCompletionSelect}
             onContinue={proceedToFinalClose}
             onCancel={() => setAfterCompletionOpen(false)}
@@ -682,6 +696,8 @@ export default function ErhebungWorkspace({
         {followupOpen ? (
           <FollowupDialog
             values={erhebung}
+            stepLabel={closeStepLabel("followup")}
+            inert={erhebungCloseOpen}
             onChange={handleFollowupChange}
             onSave={() => {
               void handleFollowupFinish();
@@ -693,8 +709,12 @@ export default function ErhebungWorkspace({
         ) : null}
 
         {warningDialogOpen ? (
-          <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-4 md:items-center">
-            <div className="w-full max-w-lg space-y-3 rounded-xl border border-tempis-orange bg-surface p-4 shadow-lg">
+          <AppDialog
+            title="Hinweise"
+            stepLabel={closeStepLabel("warning")}
+            dismissible
+            onClose={() => setWarningDialogOpen(false)}
+          >
             <p className="text-sm">
               {closeDialogMessage({
                 isIncomplete,
@@ -704,9 +724,7 @@ export default function ErhebungWorkspace({
                 lyseJaWithKeinStroke,
                 longerThan60Minutes: false,
                 needsCloseAnyway: true,
-                continueQuestion: isIncomplete
-                  ? "Trotzdem abschließen?"
-                  : "Trotzdem fortfahren?",
+                continueQuestion: "Trotzdem fortfahren?",
               })}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -715,13 +733,13 @@ export default function ErhebungWorkspace({
                 onClick={proceedToAfterCompletion}
                 className="rounded-lg bg-tempis-signal px-4 py-2 font-semibold text-white"
               >
-                {isIncomplete ? "Trotzdem abschließen" : "Trotzdem fortfahren"}
+                Trotzdem fortfahren
               </button>
               {canNormalizeMissing ? (
                 <button
                   type="button"
                   onClick={markMissingAsNormal}
-                  className="rounded-lg bg-tempis-blue-dark px-4 py-2 font-semibold text-white"
+                  className="rounded-lg bg-tempis-blue-dark px-4 py-2 font-semibold text-white hover:bg-tempis-blue-darker"
                 >
                   Alle fehlenden Felder als normal markieren
                 </button>
@@ -734,14 +752,15 @@ export default function ErhebungWorkspace({
                 Abbrechen
               </button>
             </div>
-            </div>
-          </div>
+          </AppDialog>
         ) : null}
 
         {strokeLyseOrderOpen ? (
-          <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-4 md:items-center">
-            <div className="w-full max-w-lg space-y-3 rounded-xl border border-tempis-orange bg-surface p-4 shadow-lg">
-              <p className="text-sm">
+          <AppDialog
+            label="Lyse vor Stroke"
+            dismissible={false}
+          >
+            <p className="text-sm">
                 Lyse wurde vor Stroke dokumentiert. Bitte wählen, wie damit
                 umgegangen werden soll.
               </p>
@@ -763,7 +782,7 @@ export default function ErhebungWorkspace({
                   onClick={() => {
                     void confirmStrokeLyseSimultaneous();
                   }}
-                  className="rounded-lg bg-tempis-signal px-4 py-2 text-left font-semibold text-white"
+                  className="rounded-lg bg-tempis-blue-dark px-4 py-2 text-left font-semibold text-white hover:bg-tempis-blue-darker"
                 >
                   Ich habe beide gleichzeitig entschieden
                   <span className="mt-0.5 block text-xs font-medium text-white/80">
@@ -771,13 +790,16 @@ export default function ErhebungWorkspace({
                   </span>
                 </button>
               </div>
-            </div>
-          </div>
+          </AppDialog>
         ) : null}
 
         {closeDialogOpen ? (
-          <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-4 md:items-center">
-            <div className="w-full max-w-lg space-y-3 rounded-xl border border-tempis-orange bg-surface p-4 shadow-lg">
+          <AppDialog
+            title="Untersuchung beenden"
+            stepLabel={closeStepLabel("examClose")}
+            dismissible
+            onClose={() => setCloseDialogOpen(false)}
+          >
             <p className="text-sm">
               Untersuchung beenden und als abgeschlossen markieren?
               {isExamLongerThan60Minutes(erhebung)
@@ -790,7 +812,7 @@ export default function ErhebungWorkspace({
                 onClick={confirmStop}
                 className="rounded-lg bg-tempis-signal px-4 py-2 font-semibold text-white"
               >
-                Abschließen
+                Untersuchung beenden
               </button>
               <button
                 type="button"
@@ -800,13 +822,17 @@ export default function ErhebungWorkspace({
                 Abbrechen
               </button>
             </div>
-            </div>
-          </div>
+          </AppDialog>
         ) : null}
 
         {erhebungCloseOpen ? (
-          <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-4 md:items-center">
-            <div className="w-full max-w-lg space-y-3 rounded-xl border border-tempis-orange bg-surface p-4 shadow-lg">
+          <AppDialog
+            title="Erhebung abschließen"
+            stepLabel={followupOpen ? closeStepLabel("followup") : undefined}
+            dismissible
+            onClose={() => setErhebungCloseOpen(false)}
+            zClass="z-[80]"
+          >
               <ErhebungCloseWarningBody
                 values={{ ...emptyFollowupValues(), ...erhebung }}
               />
@@ -818,7 +844,7 @@ export default function ErhebungWorkspace({
                   }}
                   className="rounded-lg bg-tempis-signal px-4 py-2 font-semibold text-white"
                 >
-                  Abschließen
+                  Erhebung abschließen
                 </button>
                 <button
                   type="button"
@@ -828,8 +854,7 @@ export default function ErhebungWorkspace({
                   Abbrechen
                 </button>
               </div>
-            </div>
-          </div>
+          </AppDialog>
         ) : null}
 
         {FORM_SECTIONS.map((section) => {

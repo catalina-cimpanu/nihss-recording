@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test lib/nihss/clicks.test.ts lib/nihss/duration.test.ts lib/nihss/erhebung-status.test.ts lib/nihss/exam-view.test.ts lib/nihss/followup.test.ts lib/nihss/scoring.test.ts lib/nihss/stats.test.ts lib/db/erhebung-patch.test.ts lib/db/persist-queue.test.ts"
+    "test": "tsx --test lib/nihss/clicks.test.ts lib/nihss/close-flow.test.ts lib/nihss/duration.test.ts lib/nihss/erhebung-status.test.ts lib/nihss/exam-view.test.ts lib/nihss/followup.test.ts lib/nihss/scoring.test.ts lib/nihss/stats.test.ts lib/db/erhebung-patch.test.ts lib/db/persist-queue.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",
