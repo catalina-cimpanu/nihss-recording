@@ -366,8 +366,9 @@ export default function ErhebungWorkspace({
     setWarningDialogOpen(false);
     setCloseDialogOpen(false);
     setFollowupOpen(false);
-    setPopupStroke(null);
-    setPopupLyse(null);
+    const current = erhebungRef.current;
+    setPopupStroke(current.stroke_after_completion_status);
+    setPopupLyse(current.lyse_after_completion_status);
     setAfterCompletionOpen(true);
   }
 

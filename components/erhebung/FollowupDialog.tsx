@@ -1,7 +1,11 @@
 "use client";
 
 import FollowupFields from "@/components/erhebung/FollowupFields";
-import { emptyFollowupValues, isSoloPatientenIdMissing } from "@/lib/nihss/followup";
+import {
+  emptyFollowupValues,
+  isLyseKiVorMissing,
+  isSoloPatientenIdMissing,
+} from "@/lib/nihss/followup";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
 type FollowupDialogProps = {
@@ -25,6 +29,9 @@ export default function FollowupDialog({
           Diese Angaben können übersprungen werden.
           {isSoloPatientenIdMissing(values)
             ? " Die Solo-Patienten-ID kann hier nachgetragen werden."
+            : ""}
+          {isLyseKiVorMissing(values)
+            ? " Die Lyse-Kontraindikation vor der Untersuchung kann hier nachgetragen werden."
             : ""}
         </p>
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">

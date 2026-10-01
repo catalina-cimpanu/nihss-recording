@@ -5,6 +5,11 @@ import {
   applyFollowupChange,
   applyFollowupPatch,
   digitsOnly,
+  emptyFollowupValues,
+  KI_TIMING_NACH,
+  KI_TIMING_VOR,
+  hasNachKi,
+  isRetractedKi,
   needsPreExamFollowup,
   preExamFollowupPatch,
 } from "@/lib/nihss/followup";
@@ -61,17 +66,31 @@ describe("applyFollowupPatch", () => {
   });
 
   it("clears e3 text when e3 is not Ja", () => {
-    const next = applyFollowupPatch(row(), {
-      lyse_kontraindikation_nach_untersuchung: "Ja",
-      lyse_kontraindikation_beeinflusst: "Nein",
-    });
+    const next = applyFollowupPatch(
+      row({
+        lyse_ki_oak: true,
+        lyse_ki_oak_timing: KI_TIMING_NACH,
+      }),
+      {
+        lyse_kontraindikation_beeinflusst: "Nein",
+      },
+    );
+    assert.equal(next.lyse_kontraindikation_nach_untersuchung, "Ja");
     assert.equal(next.lyse_kontraindikation_nach_welche, "OAK");
     assert.equal(next.lyse_kontraindikation_beeinflusst_text, null);
   });
 
-  it("clears circumstance text when the option is unchecked", () => {
-    const next = applyFollowupPatch(row(), { umstaende_kooperation: false });
-    assert.equal(next.umstaende_kooperation_text, null);
+  it("Keine on circumstances clears selected options; selecting an option turns Keine off", () => {
+    const none = applyFollowupPatch(row(), { umstaende_keine: true });
+    assert.equal(none.umstaende_keine, true);
+    assert.equal(none.umstaende_kooperation, false);
+    assert.equal(none.umstaende_kooperation_text, null);
+
+    const written = applyFollowupPatch(row({ umstaende_keine: true }), {
+      umstaende_sprachbarriere: true,
+    });
+    assert.equal(written.umstaende_keine, false);
+    assert.equal(written.umstaende_sprachbarriere, true);
   });
 
   it("Keine on remarks clears the text; text turns Keine off", () => {
@@ -85,18 +104,110 @@ describe("applyFollowupPatch", () => {
     assert.equal(written.sonstige_anmerkungen_keine, false);
   });
 
-  it("clears shared KI reasons when vor is not Ja and Sonstige text when Sonstige is unchecked", () => {
+  it("sets timing on first KI tick and does not overwrite vor with nach except via reclassify", () => {
+    const first = applyFollowupPatch(row(), {
+      lyse_ki_oak: true,
+      lyse_ki_oak_timing: KI_TIMING_VOR,
+    });
+    assert.equal(first.lyse_ki_oak, true);
+    assert.equal(first.lyse_ki_oak_timing, KI_TIMING_VOR);
+
+    const reclassified = applyFollowupPatch(first, {
+      lyse_ki_oak: true,
+      lyse_ki_oak_timing: KI_TIMING_NACH,
+    });
+    assert.equal(reclassified.lyse_ki_oak_timing, KI_TIMING_NACH);
+
+    const kept = applyFollowupPatch(first, { lyse_ki_oak: true });
+    assert.equal(kept.lyse_ki_oak_timing, KI_TIMING_VOR);
+
+    const implicit = applyFollowupPatch(row(), { lyse_ki_oak: true });
+    assert.equal(implicit.lyse_ki_oak_timing, KI_TIMING_VOR);
+
+    const stayNach = applyFollowupPatch(reclassified, {
+      lyse_ki_oak: true,
+      lyse_ki_oak_timing: KI_TIMING_VOR,
+    });
+    assert.equal(stayNach.lyse_ki_oak_timing, KI_TIMING_NACH);
+  });
+
+  it("keeps a retracted vor KI hidden from the post list and does not allow it as nach", () => {
+    const previous = row({
+      lyse_ki_oak: true,
+      lyse_ki_oak_timing: KI_TIMING_VOR,
+    });
+    const retracted = applyFollowupPatch(previous, {
+      lyse_ki_oak: false,
+      lyse_ki_oak_timing: KI_TIMING_VOR,
+    });
+    assert.equal(retracted.lyse_ki_oak, false);
+    assert.equal(retracted.lyse_ki_oak_timing, KI_TIMING_VOR);
+    assert.equal(isRetractedKi(false, KI_TIMING_VOR), true);
+    assert.equal(isRetractedKi(true, KI_TIMING_VOR), false);
+    assert.equal(isRetractedKi(false, null), false);
+
+    const otherTicked = applyFollowupPatch(retracted, {
+      lyse_ki_zeitfenster: true,
+      lyse_ki_zeitfenster_timing: KI_TIMING_NACH,
+    });
+    assert.equal(otherTicked.lyse_ki_oak, false);
+    assert.equal(otherTicked.lyse_ki_oak_timing, KI_TIMING_VOR);
+    assert.equal(otherTicked.lyse_ki_zeitfenster, true);
+    assert.equal(otherTicked.lyse_ki_zeitfenster_timing, KI_TIMING_NACH);
+    assert.equal(isRetractedKi(false, otherTicked.lyse_ki_oak_timing), true);
+  });
+
+  it("derives nach Ja/Nein from nach-timed KIs and keeps those ticks", () => {
+    const previous = row({
+      lyse_ki_oak: true,
+      lyse_ki_oak_timing: KI_TIMING_VOR,
+    });
+    const cleared = applyFollowupPatch(previous, { lyse_ki_oak: false });
+    assert.equal(cleared.lyse_ki_oak, false);
+    assert.equal(cleared.lyse_ki_oak_timing, null);
+
+    const nachTick = applyFollowupPatch(row(), {
+      lyse_ki_zeitfenster: true,
+      lyse_ki_zeitfenster_timing: KI_TIMING_NACH,
+    });
+    assert.equal(nachTick.lyse_kontraindikation_nach_untersuchung, "Ja");
+    assert.equal(hasNachKi(nachTick), true);
+
+    const removed = applyFollowupPatch(nachTick, { lyse_ki_zeitfenster: false });
+    assert.equal(removed.lyse_ki_zeitfenster, false);
+    assert.equal(removed.lyse_kontraindikation_nach_untersuchung, "Nein");
+  });
+
+  it("clears vor KI reasons when vor is not Ja, keeps nach reasons, and clears Sonstige text when unchecked", () => {
     const cleared = applyFollowupPatch(
       row({
         lyse_kontraindikation_vor_untersuchung: "Ja",
         lyse_ki_oak: true,
+        lyse_ki_oak_timing: KI_TIMING_VOR,
         lyse_ki_sonstige: true,
         lyse_ki_sonstige_text: "andere",
+        lyse_ki_sonstige_timing: KI_TIMING_VOR,
       }),
       { lyse_kontraindikation_vor_untersuchung: "Nein" },
     );
     assert.equal(cleared.lyse_ki_oak, false);
+    assert.equal(cleared.lyse_ki_oak_timing, null);
     assert.equal(cleared.lyse_ki_sonstige_text, null);
+
+    const keptNach = applyFollowupPatch(
+      row({
+        lyse_kontraindikation_vor_untersuchung: "Ja",
+        lyse_ki_oak: true,
+        lyse_ki_oak_timing: KI_TIMING_VOR,
+        lyse_ki_zeitfenster: true,
+        lyse_ki_zeitfenster_timing: KI_TIMING_NACH,
+      }),
+      { lyse_kontraindikation_vor_untersuchung: "Nein" },
+    );
+    assert.equal(keptNach.lyse_ki_oak, false);
+    assert.equal(keptNach.lyse_ki_oak_timing, null);
+    assert.equal(keptNach.lyse_ki_zeitfenster, true);
+    assert.equal(keptNach.lyse_ki_zeitfenster_timing, KI_TIMING_NACH);
 
     const uncheck = applyFollowupPatch(
       row({
@@ -107,6 +218,31 @@ describe("applyFollowupPatch", () => {
       { lyse_ki_sonstige: false },
     );
     assert.equal(uncheck.lyse_ki_sonstige_text, null);
+  });
+
+  it("records KI flag and timing changes as followup events", () => {
+    const ticked = applyFollowupChange(row(), {
+      lyse_ki_oak: true,
+      lyse_ki_oak_timing: KI_TIMING_VOR,
+    });
+    assert.equal(ticked.ereignisse.length, 2);
+    assert.equal(ticked.ereignisse[0]?.feld_key, "lyse_ki_oak");
+    assert.equal(ticked.ereignisse[0]?.wert_label, "Ja");
+    assert.equal(ticked.ereignisse[1]?.feld_key, "lyse_ki_oak_timing");
+    assert.equal(ticked.ereignisse[1]?.wert_label, KI_TIMING_VOR);
+
+    const reclassified = applyFollowupChange(ticked.erhebung, {
+      lyse_ki_oak: true,
+      lyse_ki_oak_timing: KI_TIMING_NACH,
+    });
+    assert.equal(reclassified.ereignisse.length, 2);
+    assert.equal(
+      reclassified.ereignisse[0]?.feld_key,
+      "lyse_kontraindikation_nach_untersuchung",
+    );
+    assert.equal(reclassified.ereignisse[0]?.wert_label, "Ja");
+    assert.equal(reclassified.ereignisse[1]?.feld_key, "lyse_ki_oak_timing");
+    assert.equal(reclassified.ereignisse[1]?.wert_label, KI_TIMING_NACH);
   });
 
   it("records Ja/Nein option clicks as followup events and ignores text-only edits", () => {
@@ -130,6 +266,16 @@ describe("applyFollowupPatch", () => {
 
 describe("pre-exam followup", () => {
   it("keeps a partial Solo-ID or Kontraindikation and treats the other as still missing", () => {
+    const withKi = preExamFollowupPatch({
+      ...emptyFollowupValues(),
+      ...row(),
+      solo_patienten_id: "12",
+      lyse_kontraindikation_vor_untersuchung: "Ja",
+      lyse_ki_oak: true,
+    });
+    assert.equal(withKi.lyse_ki_oak, true);
+    assert.equal(withKi.lyse_ki_oak_timing, KI_TIMING_VOR);
+
     const onlyId = preExamFollowupPatch({
       ...row(),
       solo_patienten_id: "12ab",
