@@ -63,7 +63,6 @@ import {
   isExamLongerThan60Minutes,
   isRapidRepeatClick,
 } from "@/lib/nihss/validation-exam";
-import { compactFieldRows, type ExamViewMode } from "@/lib/nihss/exam-view";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
 type ErhebungWorkspaceProps = {
@@ -92,54 +91,6 @@ function fieldFrameClass(color: ScoreColor | null): string {
   };
 
   return frames[color];
-}
-
-function NihssFieldBlock({
-  field,
-  erhebung,
-  readOnly,
-  viewMode,
-  onSelect,
-}: {
-  field: ClickableField;
-  erhebung: ErhebungRow;
-  readOnly: boolean;
-  viewMode: ExamViewMode;
-  onSelect: (field: ClickableField, value: string) => void;
-}) {
-  const selectionColor = getSelectedFieldColor(field, erhebung);
-  const frameColorClass = fieldFrameClass(selectionColor);
-  const compact = viewMode === "compact";
-
-  return (
-    <div
-      className={`min-w-0 space-y-2 ${optionStyles.fieldFrame} ${frameColorClass} ${
-        compact ? "h-full" : ""
-      }`}
-    >
-      <h3
-        className={
-          compact ? "text-sm font-semibold leading-snug md:text-xs" : "text-sm font-semibold"
-        }
-      >
-        {field.label}
-      </h3>
-      {field.selection === "multiple" ? (
-        <p className="text-xs text-muted">Mehrfachauswahl möglich</p>
-      ) : null}
-      <FieldOptions
-        field={field}
-        erhebung={erhebung}
-        readOnly={readOnly}
-        viewMode={viewMode}
-        compact={
-          field.selection === "multiple" ||
-          field.options.every((option) => option.color === "side")
-        }
-        onSelect={onSelect}
-      />
-    </div>
-  );
 }
 
 function closeDialogMessage(args: {
@@ -904,30 +855,35 @@ export default function ErhebungWorkspace({
                   <p className="mt-1 text-sm text-muted">{section.prompt}</p>
                 ) : null}
               </div>
-              {(viewMode === "compact"
-                ? compactFieldRows(fields)
-                : fields.map((field) => [field])
-              ).map((row) => (
-                <div
-                  key={row.map((field) => field.key).join("-")}
-                  className={
-                    row.length === 2
-                      ? "grid grid-cols-1 items-stretch gap-2 md:grid-cols-2"
-                      : undefined
-                  }
-                >
-                  {row.map((field) => (
-                    <NihssFieldBlock
-                      key={field.key}
+              {fields.map((field) => {
+                const selectionColor = getSelectedFieldColor(field, erhebung);
+                const frameColorClass = fieldFrameClass(selectionColor);
+
+                return (
+                  <div
+                    key={field.key}
+                    className={`space-y-2 ${optionStyles.fieldFrame} ${frameColorClass}`}
+                  >
+                    <h3 className="text-sm font-semibold">{field.label}</h3>
+                    {field.selection === "multiple" ? (
+                      <p className="text-xs text-muted">
+                        Mehrfachauswahl möglich
+                      </p>
+                    ) : null}
+                    <FieldOptions
                       field={field}
                       erhebung={erhebung}
                       readOnly={readOnly}
                       viewMode={viewMode}
+                      compact={
+                        field.selection === "multiple" ||
+                        field.options.every((option) => option.color === "side")
+                      }
                       onSelect={handleSelect}
                     />
-                  ))}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </section>
           );
         })}

@@ -26,7 +26,7 @@ export function fieldOptionsLayout(args: {
   }
 
   if (args.viewMode === "compact") {
-    return "stack";
+    return "grid";
   }
 
   if (args.compact) {
@@ -57,24 +57,4 @@ export function writeExamViewMode(
 
 export function isExamWorkspacePath(pathname: string): boolean {
   return /^\/records\/[^/]+$/.test(pathname);
-}
-
-/** Pair fields for Kompakt: two per row from md up; an odd leftover sits full-width first. */
-export function compactFieldRows<T>(fields: T[]): T[][] {
-  if (fields.length === 0) {
-    return [];
-  }
-
-  const rows: T[][] = [];
-  let index = 0;
-  if (fields.length % 2 === 1) {
-    rows.push([fields[0]]);
-    index = 1;
-  }
-
-  for (; index < fields.length; index += 2) {
-    rows.push(fields.slice(index, index + 2));
-  }
-
-  return rows;
 }
