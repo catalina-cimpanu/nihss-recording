@@ -18,6 +18,7 @@ export type DecisionDurations = {
   dauer_untersuchung_ms: number | null;
   dauer_start_zu_stroke_ms: number | null;
   dauer_stroke_zu_lyse_ms: number | null;
+  dauer_start_zu_lyse_ms: number | null;
 };
 
 export type DecisionClock = {
@@ -28,6 +29,7 @@ export type DecisionClock = {
 export type DecisionClocks = {
   startToStroke: DecisionClock;
   strokeToLyse: DecisionClock;
+  startToLyse: DecisionClock;
 };
 
 export type AutoCloseInput = Pick<
@@ -124,6 +126,7 @@ export function getDecisionDurations(row: DurationInput): DecisionDurations {
     dauer_untersuchung_ms: positiveDiffMs(startMs, endMs),
     dauer_start_zu_stroke_ms: positiveDiffMs(startMs, strokeMs),
     dauer_stroke_zu_lyse_ms: positiveDiffMs(strokeMs, lyseMs),
+    dauer_start_zu_lyse_ms: positiveDiffMs(startMs, lyseMs),
   };
 }
 
@@ -139,6 +142,10 @@ export function getDecisionClocks(row: DurationInput): DecisionClocks {
     },
     strokeToLyse: {
       startAt: strokeAt && (!examEnded || lyseAt) ? strokeAt : null,
+      endAt: lyseAt,
+    },
+    startToLyse: {
+      startAt: startAt && (!examEnded || lyseAt) ? startAt : null,
       endAt: lyseAt,
     },
   };

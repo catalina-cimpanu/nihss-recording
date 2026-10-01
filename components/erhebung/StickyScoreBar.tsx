@@ -69,18 +69,25 @@ export default function StickyScoreBar({
               ) : null}
             </p>
             <p className="mt-0.5 hidden text-xs font-semibold text-muted md:block md:text-sm">
-              Start→Stroke{" "}
+              Start → Stroke{" "}
               <DurationValue
                 startAt={clocks.startToStroke.startAt}
                 endAt={clocks.startToStroke.endAt}
                 title="Dauer Start bis Stroke-Entscheidung"
               />
-              <span className="mx-2">·</span>
-              Stroke→Lyse{" "}
+              <span className="mx-2">|</span>
+              Stroke → Lyse{" "}
               <DurationValue
                 startAt={clocks.strokeToLyse.startAt}
                 endAt={clocks.strokeToLyse.endAt}
                 title="Dauer Stroke- bis Lyse-Entscheidung"
+              />
+              <span className="mx-2">|</span>
+              Start → Lyse{" "}
+              <DurationValue
+                startAt={clocks.startToLyse.startAt}
+                endAt={clocks.startToLyse.endAt}
+                title="Dauer Start bis Lyse-Entscheidung"
               />
             </p>
           </div>

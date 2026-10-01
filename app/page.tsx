@@ -2,7 +2,6 @@ import Link from "next/link";
 import PageShell from "@/components/PageShell";
 
 const actions = [
-  { href: "/einfuehrung", label: "Einführung" },
   { href: "/new", label: "Neue Erhebung" },
   { href: "/records", label: "Erhebungen anzeigen" },
   { href: "/dashboard", label: "Dashboard" },

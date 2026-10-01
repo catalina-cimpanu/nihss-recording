@@ -37,12 +37,14 @@ export default function EinfuehrungPage() {
             Begleitumstände einschließlich Kontraindikationen.
           </li>
           <li>
-            Vor dem Beenden erscheint ein weiteres Fenster. Dort bitte Stroke
-            und Lyse noch einmal{" "}
+            Vor dem Beenden wird zuerst auf fehlende NIHSS-Felder hingewiesen,
+            falls nötig. Danach erscheint das Fenster zur hypothetischen
+            Stroke-/Lyse-Entscheidung: bitte Stroke und Lyse noch einmal{" "}
             <strong className="underline">nach</strong> vollständiger
             NIHSS-Erhebung angeben — ebenfalls hypothetisch, nur anhand des
             klinischen Befunds. Diese Angabe wird getrennt von den Klicks
-            während der Untersuchung gespeichert.
+            während der Untersuchung gespeichert. Erst danach wird die
+            Untersuchung als abgeschlossen markiert.
           </li>
         </ol>
       </section>

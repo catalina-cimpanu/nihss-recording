@@ -86,6 +86,7 @@ function closeDialogMessage(args: {
   lyseJaWithKeinStroke: boolean;
   longerThan60Minutes: boolean;
   needsCloseAnyway: boolean;
+  continueQuestion?: string;
 }): string {
   const parts: string[] = [];
 
@@ -120,7 +121,7 @@ function closeDialogMessage(args: {
     }`;
   }
 
-  return `${parts.join(" ")} Trotzdem abschließen?`;
+  return `${parts.join(" ")} ${args.continueQuestion ?? "Trotzdem abschließen?"}`;
 }
 
 export default function ErhebungWorkspace({
@@ -129,6 +130,7 @@ export default function ErhebungWorkspace({
   const [erhebung, setErhebung] = useState(initialErhebung);
   const [error, setError] = useState<string | null>(null);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [warningDialogOpen, setWarningDialogOpen] = useState(false);
   const [afterCompletionOpen, setAfterCompletionOpen] = useState(false);
   const [popupStroke, setPopupStroke] = useState<string | null>(null);
   const [popupLyse, setPopupLyse] = useState<string | null>(null);
@@ -159,10 +161,9 @@ export default function ErhebungWorkspace({
     missingFields.length + (invalidAtaxiaLimbs ? 1 : 0);
   const undecidedStrokeLyse = getUndecidedStrokeLyseLabels(erhebung);
   const lyseJaWithKeinStroke = hasLyseJaWithKeinStroke(erhebung);
-  const needsCloseAnyway =
-    isIncomplete ||
-    undecidedStrokeLyse.length > 0 ||
-    lyseJaWithKeinStroke;
+  const needsIncompleteWarning = isIncomplete;
+  const needsDecisionWarning =
+    undecidedStrokeLyse.length > 0 || lyseJaWithKeinStroke;
   const documentationWarnings = useMemo(
     () => getDocumentationWarnings(erhebung, now),
     [erhebung, now],
@@ -272,6 +273,7 @@ export default function ErhebungWorkspace({
       }
 
       autoCloseLockRef.current = true;
+      setWarningDialogOpen(false);
       setAfterCompletionOpen(false);
       setCloseDialogOpen(false);
       const result = applyLifecycleEvent({
@@ -338,9 +340,25 @@ export default function ErhebungWorkspace({
       return;
     }
 
+    if (needsIncompleteWarning || needsDecisionWarning) {
+      setWarningDialogOpen(true);
+      return;
+    }
+
+    proceedToAfterCompletion();
+  }
+
+  function proceedToAfterCompletion() {
+    setWarningDialogOpen(false);
+    setCloseDialogOpen(false);
     setPopupStroke(null);
     setPopupLyse(null);
     setAfterCompletionOpen(true);
+  }
+
+  function proceedToFinalClose() {
+    setAfterCompletionOpen(false);
+    setCloseDialogOpen(true);
   }
 
   async function handleAfterCompletionSelect(
@@ -376,11 +394,15 @@ export default function ErhebungWorkspace({
       erhebung.startzeit_untersuchung &&
       stopAt.getTime() < new Date(erhebung.startzeit_untersuchung).getTime()
     ) {
+      setWarningDialogOpen(false);
+      setAfterCompletionOpen(false);
       setCloseDialogOpen(false);
       setError("Die Endzeit wäre vor der Startzeit. Bitte Uhrzeit prüfen.");
       return;
     }
 
+    setWarningDialogOpen(false);
+    setAfterCompletionOpen(false);
     setCloseDialogOpen(false);
     const result = applyLifecycleEvent({
       erhebung,
@@ -397,6 +419,15 @@ export default function ErhebungWorkspace({
       now: new Date(),
     });
     await persist(result.erhebung, result.ereignisse);
+
+    const stillNeedsWarning =
+      getMissingNihssFields(result.erhebung).length > 0 ||
+      hasInvalidAtaxiaLimbCount(result.erhebung) ||
+      getUndecidedStrokeLyseLabels(result.erhebung).length > 0 ||
+      hasLyseJaWithKeinStroke(result.erhebung);
+    if (!stillNeedsWarning) {
+      proceedToAfterCompletion();
+    }
   }
 
   const fieldMap = useMemo(() => {
@@ -435,16 +466,17 @@ export default function ErhebungWorkspace({
           </p>
         ) : null}
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={handleStart}
-            disabled={readOnly}
-            className="rounded-lg bg-tempis-sage-dark px-4 py-3 font-semibold text-white hover:bg-tempis-sage-darker disabled:opacity-60"
-          >
-            Untersuchung starten
-          </button>
-        </div>
+        {!readOnly ? (
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleStart}
+              className="rounded-lg bg-tempis-sage-dark px-4 py-3 font-semibold text-white hover:bg-tempis-sage-darker"
+            >
+              Untersuchung starten
+            </button>
+          </div>
+        ) : null}
 
         {erhebung.startzeit_untersuchung ? (
           <p className="rounded-lg bg-tempis-sage/40 px-3 py-2 text-sm font-medium">
@@ -462,10 +494,10 @@ export default function ErhebungWorkspace({
           <p className="rounded-lg bg-tempis-ice px-3 py-2 text-sm">
             Hypothetische Entscheidung nach NIHSS
             {erhebung.stroke_after_completion_status
-              ? `: Stroke ${erhebung.stroke_after_completion_status}`
+              ? `: ${erhebung.stroke_after_completion_status}`
               : ""}
             {erhebung.lyse_after_completion_status
-              ? `${erhebung.stroke_after_completion_status ? " ·" : ":"} Lyse ${erhebung.lyse_after_completion_status}`
+              ? `${erhebung.stroke_after_completion_status ? " ·" : ":"} ${erhebung.lyse_after_completion_status}`
               : ""}
             .
           </p>
@@ -486,15 +518,12 @@ export default function ErhebungWorkspace({
             }}
             canContinue={Boolean(popupStroke && popupLyse)}
             onSelect={handleAfterCompletionSelect}
-            onContinue={() => {
-              setAfterCompletionOpen(false);
-              setCloseDialogOpen(true);
-            }}
+            onContinue={proceedToFinalClose}
             onCancel={() => setAfterCompletionOpen(false)}
           />
         ) : null}
 
-        {closeDialogOpen ? (
+        {warningDialogOpen ? (
           <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-4 md:items-center">
             <div className="w-full max-w-lg space-y-3 rounded-xl border border-tempis-orange bg-surface p-4 shadow-lg">
             <p className="text-sm">
@@ -504,17 +533,20 @@ export default function ErhebungWorkspace({
                 ataxiaIncompleteLabel,
                 undecidedStrokeLyse,
                 lyseJaWithKeinStroke,
-                longerThan60Minutes: isExamLongerThan60Minutes(erhebung),
-                needsCloseAnyway,
+                longerThan60Minutes: false,
+                needsCloseAnyway: true,
+                continueQuestion: isIncomplete
+                  ? "Trotzdem abschließen?"
+                  : "Trotzdem fortfahren?",
               })}
             </p>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={confirmStop}
+                onClick={proceedToAfterCompletion}
                 className="rounded-lg bg-tempis-signal px-4 py-2 font-semibold text-white"
               >
-                {needsCloseAnyway ? "Trotzdem abschließen" : "Abschließen"}
+                {isIncomplete ? "Trotzdem abschließen" : "Trotzdem fortfahren"}
               </button>
               {canNormalizeMissing ? (
                 <button
@@ -525,6 +557,35 @@ export default function ErhebungWorkspace({
                   Alle fehlenden Felder als normal markieren
                 </button>
               ) : null}
+              <button
+                type="button"
+                onClick={() => setWarningDialogOpen(false)}
+                className="rounded-lg border border-border px-4 py-2 font-semibold"
+              >
+                Abbrechen
+              </button>
+            </div>
+            </div>
+          </div>
+        ) : null}
+
+        {closeDialogOpen ? (
+          <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-4 md:items-center">
+            <div className="w-full max-w-lg space-y-3 rounded-xl border border-tempis-orange bg-surface p-4 shadow-lg">
+            <p className="text-sm">
+              Untersuchung beenden und als abgeschlossen markieren?
+              {isExamLongerThan60Minutes(erhebung)
+                ? " Die Untersuchungsdauer beträgt mehr als 60 Minuten."
+                : ""}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={confirmStop}
+                className="rounded-lg bg-tempis-signal px-4 py-2 font-semibold text-white"
+              >
+                Abschließen
+              </button>
               <button
                 type="button"
                 onClick={() => setCloseDialogOpen(false)}

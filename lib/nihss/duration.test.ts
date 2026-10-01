@@ -74,6 +74,7 @@ describe("getDecisionDurations", () => {
     assert.equal(result.dauer_untersuchung_ms, 12 * 60_000);
     assert.equal(result.dauer_start_zu_stroke_ms, 9 * 60_000);
     assert.equal(result.dauer_stroke_zu_lyse_ms, 2 * 60_000);
+    assert.equal(result.dauer_start_zu_lyse_ms, 11 * 60_000);
   });
 
   it("clears decision times when status is undecided", () => {
@@ -127,6 +128,10 @@ describe("getDecisionClocks", () => {
       startAt: null,
       endAt: null,
     });
+    assert.deepEqual(clocks.startToLyse, {
+      startAt: "2026-08-27T10:00:00.000Z",
+      endAt: null,
+    });
   });
 
   it("cancels undecided stroke and lyse clocks when the exam is closed", () => {
@@ -144,6 +149,10 @@ describe("getDecisionClocks", () => {
       endAt: null,
     });
     assert.deepEqual(clocks.strokeToLyse, {
+      startAt: null,
+      endAt: null,
+    });
+    assert.deepEqual(clocks.startToLyse, {
       startAt: null,
       endAt: null,
     });
@@ -165,6 +174,10 @@ describe("getDecisionClocks", () => {
       endAt: "2026-08-27T10:09:00.000Z",
     });
     assert.deepEqual(clocks.strokeToLyse, {
+      startAt: null,
+      endAt: null,
+    });
+    assert.deepEqual(clocks.startToLyse, {
       startAt: null,
       endAt: null,
     });
