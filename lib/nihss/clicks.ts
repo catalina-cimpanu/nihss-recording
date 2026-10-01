@@ -55,7 +55,7 @@ export function applyFieldClick(args: {
   const startEvents: EreignisInsert[] = [];
   let source = args.erhebung;
 
-  if (!source.startzeit_untersuchung && source.status !== "abgeschlossen") {
+  if (!source.startzeit_untersuchung && source.untersuchung_status !== "abgeschlossen") {
     const started = applyLifecycleEvent({
       erhebung: source,
       now,
@@ -290,7 +290,7 @@ export function applyLifecycleEvent(args: {
 
   if (args.kind === "stop") {
     next.endzeit_untersuchung = nowIso;
-    next.status = "abgeschlossen";
+    next.untersuchung_status = "abgeschlossen";
   }
 
   next.timeline = appendTimelineLine(
@@ -308,5 +308,43 @@ export function applyLifecycleEvent(args: {
       wert_score: null,
       ereignis_typ: "lifecycle",
     },
+  };
+}
+
+export function applyErhebungClose(args: {
+  erhebung: ErhebungRow;
+  now: Date;
+}): { erhebung: ErhebungRow; ereignisse: EreignisInsert[] } {
+  const current = args.erhebung;
+  if (
+    current.untersuchung_status !== "abgeschlossen" ||
+    current.followup_status === "abgeschlossen"
+  ) {
+    return { erhebung: current, ereignisse: [] };
+  }
+
+  const nowIso = args.now.toISOString();
+  const next: ErhebungRow = {
+    ...current,
+    followup_status: "abgeschlossen",
+    followup_abgeschlossen_at: nowIso,
+    timeline: appendTimelineLine(
+      current.timeline,
+      formatTimelineLine(args.now, "Erhebung", "Erhebung abgeschlossen"),
+    ),
+  };
+
+  return {
+    erhebung: next,
+    ereignisse: [
+      {
+        erhebung_id: next.id,
+        feld_key: "erhebung_close",
+        feld_label: "Erhebung",
+        wert_label: "Erhebung abgeschlossen",
+        wert_score: null,
+        ereignis_typ: "lifecycle",
+      },
+    ],
   };
 }

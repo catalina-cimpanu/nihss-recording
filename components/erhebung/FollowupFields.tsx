@@ -19,10 +19,13 @@ import {
 } from "@/lib/nihss/followup";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
+type FollowupVisibility = "always" | "ifMissing" | "never";
+
 type FollowupFieldsProps = {
   values: FollowupValues;
   mode: "pre" | "post";
-  preFields?: "always" | "ifMissing" | "never";
+  preFields?: FollowupVisibility;
+  vorKiFields?: FollowupVisibility;
   disabled?: boolean;
   onChange: (patch: Partial<ErhebungRow>) => void;
 };
@@ -211,17 +214,19 @@ export default function FollowupFields({
   values,
   mode,
   preFields,
+  vorKiFields,
   disabled,
   onChange,
 }: FollowupFieldsProps) {
   const preMode = preFields ?? (mode === "pre" ? "always" : "never");
+  const vorMode = vorKiFields ?? preMode;
   const showSolo =
     preMode === "always" ||
     (preMode === "ifMissing" &&
       (values.solo_patienten_id == null || values.solo_patienten_id === ""));
   const showVorKi =
-    preMode === "always" ||
-    (preMode === "ifMissing" && isLyseKiVorMissing(values));
+    vorMode === "always" ||
+    (vorMode === "ifMissing" && isLyseKiVorMissing(values));
 
   return (
     <div className="space-y-4">

@@ -34,7 +34,7 @@ export type DecisionClocks = {
 
 export type AutoCloseInput = Pick<
   ErhebungRow,
-  "status" | "startzeit_untersuchung" | "endzeit_untersuchung"
+  "untersuchung_status" | "startzeit_untersuchung" | "endzeit_untersuchung"
 >;
 
 export const AUTO_CLOSE_AFTER_MS = 3 * 60 * 60 * 1000;
@@ -49,7 +49,7 @@ export function autoCloseStopAt(row: AutoCloseInput): Date | null {
 }
 
 export function shouldAutoCloseExam(row: AutoCloseInput, now: Date): boolean {
-  if (row.status !== "offen") {
+  if (row.untersuchung_status !== "offen") {
     return false;
   }
 

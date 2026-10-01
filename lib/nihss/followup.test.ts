@@ -262,6 +262,15 @@ describe("applyFollowupPatch", () => {
     assert.equal(typed.ereignisse.length, 0);
     assert.equal(typed.erhebung.sonstige_anmerkungen, "kurz");
   });
+
+  it("ignores followup edits after the Erhebung is abgeschlossen", () => {
+    const locked = applyFollowupChange(
+      row({ followup_status: "abgeschlossen", tempis_stroke_verdacht: "Nein" }),
+      { tempis_stroke_verdacht: "Ja" },
+    );
+    assert.equal(locked.ereignisse.length, 0);
+    assert.equal(locked.erhebung.tempis_stroke_verdacht, "Nein");
+  });
 });
 
 describe("pre-exam followup", () => {

@@ -44,8 +44,9 @@ export default function EinfuehrungPage() {
             NIHSS-Erhebung angeben — ebenfalls hypothetisch, nur anhand des
             klinischen Befunds. Diese Angabe wird getrennt von den Klicks
             während der Untersuchung gespeichert. Danach können optionale
-            Angaben zum Konsil ergänzt oder übersprungen werden. Erst danach
-            wird die Untersuchung als abgeschlossen markiert.
+            Angaben zum Konsil ergänzt oder übersprungen werden. Die
+            Untersuchung ist dann abgeschlossen; die Konsilangaben bleiben
+            änderbar, bis <strong>Erhebung abschließen</strong> gewählt wird.
           </li>
           <li>
             Nach <strong>Erhebung erstellen</strong> können Solo-Patienten-ID

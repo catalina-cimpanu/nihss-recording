@@ -188,7 +188,7 @@ function autoCloseState(
   overrides: Partial<AutoCloseInput> = {},
 ): AutoCloseInput {
   return {
-    status: "offen",
+    untersuchung_status: "offen",
     startzeit_untersuchung: "2026-08-27T10:00:00.000Z",
     endzeit_untersuchung: null,
     ...overrides,
@@ -228,7 +228,7 @@ describe("shouldAutoCloseExam", () => {
     );
     assert.equal(
       shouldAutoCloseExam(
-        autoCloseState({ status: "abgeschlossen" }),
+        autoCloseState({ untersuchung_status: "abgeschlossen" }),
         now,
       ),
       false,

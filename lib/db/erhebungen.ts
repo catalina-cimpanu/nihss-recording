@@ -10,7 +10,7 @@ import type {
 } from "@/lib/supabase/database.types";
 
 export const ERHEBUNG_LIST_COLUMNS =
-  "id, created_at, erhebungs_id, untersuchungstyp, status, nihss, g_fast, stroke_status, lyse_status, startzeit_untersuchung, endzeit_untersuchung" as const;
+  "id, created_at, erhebungs_id, untersuchungstyp, untersuchung_status, followup_status, nihss, g_fast, stroke_status, lyse_status, startzeit_untersuchung, endzeit_untersuchung" as const;
 
 export type ErhebungListItem = Pick<
   ErhebungRow,
@@ -18,7 +18,8 @@ export type ErhebungListItem = Pick<
   | "created_at"
   | "erhebungs_id"
   | "untersuchungstyp"
-  | "status"
+  | "untersuchung_status"
+  | "followup_status"
   | "nihss"
   | "g_fast"
   | "stroke_status"
@@ -36,9 +37,9 @@ export async function listErhebungen(): Promise<ErhebungListItem[]> {
   const { data, error } = await getSupabaseClient()
     .from("erhebungen")
     .select(
-      "id, created_at, erhebungs_id, untersuchungstyp, status, nihss, g_fast, stroke_status, lyse_status, stroke_after_completion_status, lyse_after_completion_status, startzeit_untersuchung, endzeit_untersuchung, stroke_initial_at, stroke_last_at, lyse_initial_at, lyse_last_at, punkte_2, punkte_4, punkte_5a, punkte_5b, punkte_9_grob, punkte_10",
+      "id, created_at, erhebungs_id, untersuchungstyp, untersuchung_status, followup_status, nihss, g_fast, stroke_status, lyse_status, stroke_after_completion_status, lyse_after_completion_status, startzeit_untersuchung, endzeit_untersuchung, stroke_initial_at, stroke_last_at, lyse_initial_at, lyse_last_at, punkte_2, punkte_4, punkte_5a, punkte_5b, punkte_9_grob, punkte_10",
     )
-    .neq("status", "geloescht")
+    .neq("untersuchung_status", "geloescht")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -53,7 +54,8 @@ export async function listErhebungen(): Promise<ErhebungListItem[]> {
       created_at: row.created_at,
       erhebungs_id: row.erhebungs_id,
       untersuchungstyp: row.untersuchungstyp,
-      status: row.status,
+      untersuchung_status: row.untersuchung_status,
+      followup_status: row.followup_status,
       nihss: row.nihss,
       g_fast: calculateGfast(row),
       stroke_status: row.stroke_status,
@@ -72,7 +74,7 @@ export async function listErhebungenFull(): Promise<ErhebungRow[]> {
   const { data, error } = await getSupabaseClient()
     .from("erhebungen")
     .select("*")
-    .neq("status", "geloescht")
+    .neq("untersuchung_status", "geloescht")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -135,7 +137,7 @@ export async function createErhebung(
 export async function softDeleteErhebung(id: string): Promise<void> {
   const { error } = await getSupabaseClient()
     .from("erhebungen")
-    .update({ status: "geloescht" })
+    .update({ untersuchung_status: "geloescht" })
     .eq("id", id);
 
   if (error) {

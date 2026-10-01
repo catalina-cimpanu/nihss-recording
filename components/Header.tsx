@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLayoutEffect, useRef } from "react";
 
 const navItems = [
   { href: "/", label: "Start" },
@@ -21,9 +22,39 @@ function isActive(href: string, pathname: string) {
 
 export default function Header() {
   const pathname = usePathname();
+  const headerRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) {
+      return;
+    }
+
+    function syncHeight() {
+      const header = headerRef.current;
+      if (!header) {
+        return;
+      }
+      document.documentElement.style.setProperty(
+        "--app-header-height",
+        `${header.getBoundingClientRect().height}px`,
+      );
+    }
+
+    syncHeight();
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty("--app-header-height");
+    };
+  }, []);
 
   return (
-    <header className="bg-tempis-blue-dark text-white">
+    <header
+      ref={headerRef}
+      className="bg-tempis-blue-dark text-white md:sticky md:top-0 md:z-[58] md:shadow-sm"
+    >
       <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-2">
         <Link href="/" className="text-sm font-semibold text-white">
           NIHSS Erhebung

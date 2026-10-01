@@ -4,7 +4,9 @@ import type { ErhebungRow } from "@/lib/supabase/database.types";
 import { getFieldByKey, LYSE_FIELD, STROKE_FIELD } from "@/lib/nihss/config";
 import {
   applyAfterCompletionClick,
+  applyErhebungClose,
   applyFieldClick,
+  applyLifecycleEvent,
 } from "@/lib/nihss/clicks";
 
 function row(overrides: Partial<ErhebungRow> = {}): ErhebungRow {
@@ -13,7 +15,9 @@ function row(overrides: Partial<ErhebungRow> = {}): ErhebungRow {
     created_at: "2026-08-27T10:00:00.000Z",
     erhebungs_id: "E-1",
     untersuchungstyp: "Echter Patient",
-    status: "offen",
+    untersuchung_status: "offen",
+    followup_status: "offen",
+    followup_abgeschlossen_at: null,
     startzeit_untersuchung: null,
     endzeit_untersuchung: null,
     stroke_status: "nicht entschieden",
@@ -149,5 +153,27 @@ describe("applyAfterCompletionClick", () => {
         }),
       /nicht entschieden/,
     );
+  });
+});
+
+describe("applyErhebungClose", () => {
+  it("locks follow-up only after the Untersuchung is abgeschlossen", () => {
+    const now = new Date("2026-08-27T11:00:00.000Z");
+    const ignored = applyErhebungClose({ erhebung: row(), now });
+    assert.equal(ignored.erhebung.followup_status, "offen");
+    assert.equal(ignored.ereignisse.length, 0);
+
+    const stopped = applyLifecycleEvent({
+      erhebung: row({ startzeit_untersuchung: "2026-08-27T10:00:00.000Z" }),
+      now: new Date("2026-08-27T10:30:00.000Z"),
+      kind: "stop",
+    });
+    const closed = applyErhebungClose({ erhebung: stopped.erhebung, now });
+    assert.equal(closed.erhebung.followup_status, "abgeschlossen");
+    assert.equal(closed.erhebung.followup_abgeschlossen_at, now.toISOString());
+    assert.equal(closed.ereignisse[0]?.feld_key, "erhebung_close");
+
+    const again = applyErhebungClose({ erhebung: closed.erhebung, now });
+    assert.equal(again.ereignisse.length, 0);
   });
 });

@@ -44,7 +44,9 @@ export type ErhebungRow = {
   created_at: Timestamp;
   erhebungs_id: string;
   untersuchungstyp: "Test" | "Echter Patient";
-  status: "offen" | "abgeschlossen" | "geloescht";
+  untersuchung_status: "offen" | "abgeschlossen" | "geloescht";
+  followup_status: "offen" | "abgeschlossen";
+  followup_abgeschlossen_at: Timestamp | null;
   startzeit_untersuchung: Timestamp | null;
   endzeit_untersuchung: Timestamp | null;
   stroke_status: "nicht entschieden" | "Ja" | "Kein Stroke";
@@ -192,7 +194,9 @@ export type ErhebungInsert = {
   created_at?: Timestamp;
   erhebungs_id: string;
   untersuchungstyp: ErhebungRow["untersuchungstyp"];
-  status?: ErhebungRow["status"];
+  untersuchung_status?: ErhebungRow["untersuchung_status"];
+  followup_status?: ErhebungRow["followup_status"];
+  followup_abgeschlossen_at?: Timestamp | null;
   startzeit_untersuchung?: Timestamp | null;
   endzeit_untersuchung?: Timestamp | null;
   stroke_status?: ErhebungRow["stroke_status"];
@@ -215,7 +219,9 @@ export type ErhebungInsert = {
     | "created_at"
     | "erhebungs_id"
     | "untersuchungstyp"
-    | "status"
+    | "untersuchung_status"
+    | "followup_status"
+    | "followup_abgeschlossen_at"
     | "startzeit_untersuchung"
     | "endzeit_untersuchung"
     | "stroke_status"

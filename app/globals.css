@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --app-header-height: 2.5rem;
   /* TEMPIS brand (221026 Farbschema) */
   --tempis-blue: #008fc1;
   --tempis-blue-dark: #00648a;

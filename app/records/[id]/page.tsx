@@ -23,7 +23,7 @@ export default async function RecordPage({
   }
 
   const erhebung = await getErhebung(id);
-  if (!erhebung || erhebung.status === "geloescht") {
+  if (!erhebung || erhebung.untersuchung_status === "geloescht") {
     notFound();
   }
 

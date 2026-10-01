@@ -29,6 +29,7 @@ import {
 } from "@/lib/nihss/config";
 import {
   applyAfterCompletionClick,
+  applyErhebungClose,
   applyFieldClick,
   applyLifecycleEvent,
   applyMissingFieldsAsNormal,
@@ -38,7 +39,15 @@ import {
   autoCloseStopAt,
   shouldAutoCloseExam,
 } from "@/lib/nihss/duration";
-import { applyFollowupChange, emptyFollowupValues } from "@/lib/nihss/followup";
+import {
+  applyFollowupChange,
+  emptyFollowupValues,
+  type FollowupValues,
+} from "@/lib/nihss/followup";
+import {
+  erhebungCloseConfirmQuestion,
+  missingFollowupLabels,
+} from "@/lib/nihss/erhebung-status";
 import { formatBerlinTime } from "@/lib/nihss/timeline";
 import {
   getAtaxiaIncompleteLabel,
@@ -127,6 +136,25 @@ function closeDialogMessage(args: {
   return `${parts.join(" ")} ${args.continueQuestion ?? "Trotzdem abschließen?"}`;
 }
 
+function ErhebungCloseWarningBody({ values }: { values: FollowupValues }) {
+  const missing = missingFollowupLabels(values);
+  return (
+    <>
+      {missing.length > 0 ? (
+        <div className="space-y-2 text-sm">
+          <p>Nicht alle Angaben zum Konsil sind ausgefüllt:</p>
+          <ul className="list-disc space-y-1 pl-5">
+            {missing.map((label) => (
+              <li key={label}>{label}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <p className="text-sm">{erhebungCloseConfirmQuestion(missing)}</p>
+    </>
+  );
+}
+
 export default function ErhebungWorkspace({
   initialErhebung,
 }: ErhebungWorkspaceProps) {
@@ -136,6 +164,7 @@ export default function ErhebungWorkspace({
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
   const [afterCompletionOpen, setAfterCompletionOpen] = useState(false);
   const [followupOpen, setFollowupOpen] = useState(false);
+  const [erhebungCloseOpen, setErhebungCloseOpen] = useState(false);
   const [popupStroke, setPopupStroke] = useState<string | null>(null);
   const [popupLyse, setPopupLyse] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -152,7 +181,8 @@ export default function ErhebungWorkspace({
   const followupTextTimerRef = useRef<number | null>(null);
   erhebungRef.current = erhebung;
 
-  const readOnly = erhebung.status === "abgeschlossen";
+  const followupClosed = erhebung.followup_status === "abgeschlossen";
+  const readOnly = erhebung.untersuchung_status === "abgeschlossen";
   const missingFields = useMemo(
     () => getMissingNihssFields(erhebung),
     [erhebung],
@@ -274,7 +304,7 @@ export default function ErhebungWorkspace({
     const delay = Math.max(0, startMs + AUTO_CLOSE_AFTER_MS - Date.now());
     const id = window.setTimeout(() => {
       const current = erhebungRef.current;
-      if (autoCloseLockRef.current || current.status !== "offen") {
+      if (autoCloseLockRef.current || current.untersuchung_status !== "offen") {
         return;
       }
       if (!shouldAutoCloseExam(current, new Date())) {
@@ -290,6 +320,7 @@ export default function ErhebungWorkspace({
       setAfterCompletionOpen(false);
       setFollowupOpen(false);
       setCloseDialogOpen(false);
+      setErhebungCloseOpen(false);
       const result = applyLifecycleEvent({
         erhebung: current,
         now: stopAt,
@@ -393,6 +424,9 @@ export default function ErhebungWorkspace({
   }
 
   function handleFollowupChange(patch: Partial<ErhebungRow>) {
+    if (erhebungRef.current.followup_status === "abgeschlossen") {
+      return;
+    }
     const result = applyFollowupChange(erhebungRef.current, patch);
     erhebungRef.current = result.erhebung;
     setErhebung(result.erhebung);
@@ -468,6 +502,19 @@ export default function ErhebungWorkspace({
     await persist(result.erhebung, [result.ereignis]);
   }
 
+  async function confirmErhebungClose() {
+    if (erhebungRef.current.followup_status === "abgeschlossen") {
+      setErhebungCloseOpen(false);
+      return;
+    }
+    setErhebungCloseOpen(false);
+    const result = applyErhebungClose({
+      erhebung: erhebungRef.current,
+      now: new Date(),
+    });
+    await persist(result.erhebung, result.ereignisse);
+  }
+
   async function markMissingAsNormal() {
     const result = applyMissingFieldsAsNormal({
       erhebung,
@@ -495,7 +542,7 @@ export default function ErhebungWorkspace({
 
   return (
     <div>
-      <div className="sticky top-0 z-50">
+      <div className="sticky top-0 z-50 md:top-[var(--app-header-height,2.5rem)]">
         <StickyScoreBar
           erhebung={erhebung}
           readOnly={readOnly}
@@ -510,10 +557,15 @@ export default function ErhebungWorkspace({
           viewMode === "compact" ? "space-y-3" : "space-y-4"
         } ${readOnly ? "pb-4" : "pb-28"}`}
       >
+        <h2 className="text-2xl font-bold">Untersuchung</h2>
+
         {readOnly ? (
           <p className="rounded-lg bg-tempis-ice px-3 py-2 text-sm">
             Die Untersuchung ist abgeschlossen und die NIHSS-Angaben sind nur
-            noch lesbar. Angaben zum Konsil können weiter bearbeitet werden.
+            noch lesbar.
+            {followupClosed
+              ? " Die Erhebung ist abgeschlossen. Angaben zum Konsil sind nicht mehr änderbar."
+              : " Angaben zum Konsil können weiter bearbeitet werden."}
           </p>
         ) : null}
 
@@ -668,6 +720,34 @@ export default function ErhebungWorkspace({
           </div>
         ) : null}
 
+        {erhebungCloseOpen ? (
+          <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-4 md:items-center">
+            <div className="w-full max-w-lg space-y-3 rounded-xl border border-tempis-orange bg-surface p-4 shadow-lg">
+              <ErhebungCloseWarningBody
+                values={{ ...emptyFollowupValues(), ...erhebung }}
+              />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void confirmErhebungClose();
+                  }}
+                  className="rounded-lg bg-tempis-signal px-4 py-2 font-semibold text-white"
+                >
+                  Abschließen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setErhebungCloseOpen(false)}
+                  className="rounded-lg border border-border px-4 py-2 font-semibold"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {FORM_SECTIONS.map((section) => {
           const fields = section.fieldKeys
             .map((key) => fieldMap.get(key) ?? getFieldByKey(key))
@@ -725,21 +805,33 @@ export default function ErhebungWorkspace({
         })}
 
         {readOnly ? (
-          <section className="space-y-3 rounded-xl border border-border bg-surface p-3">
-            <div>
-              <h2 className="text-lg font-semibold">Angaben zum Konsil</h2>
-              <p className="mt-1 text-sm text-muted">
-                Diese Angaben können nach Beenden der Untersuchung noch geändert
-                werden.
+          <>
+            <h2 className="text-2xl font-bold">Angaben zum Konsil</h2>
+            <section className="space-y-3 rounded-xl border border-border bg-surface p-3">
+              <p className="text-sm text-muted">
+                {followupClosed
+                  ? "Die Erhebung ist abgeschlossen. Diese Angaben sind nicht mehr änderbar."
+                  : "Diese Angaben können nach Beenden der Untersuchung noch geändert werden."}
               </p>
-            </div>
-            <FollowupFields
-              values={{ ...emptyFollowupValues(), ...erhebung }}
-              mode="post"
-              preFields="always"
-              onChange={handleFollowupChange}
-            />
-          </section>
+              <FollowupFields
+                values={{ ...emptyFollowupValues(), ...erhebung }}
+                mode="post"
+                preFields="always"
+                vorKiFields="never"
+                disabled={followupClosed}
+                onChange={handleFollowupChange}
+              />
+              {!followupClosed ? (
+                <button
+                  type="button"
+                  onClick={() => setErhebungCloseOpen(true)}
+                  className="rounded-lg bg-tempis-signal px-4 py-3 font-semibold text-white"
+                >
+                  Erhebung abschließen
+                </button>
+              ) : null}
+            </section>
+          </>
         ) : null}
 
         <section className="space-y-3 rounded-xl border border-border bg-surface p-3">

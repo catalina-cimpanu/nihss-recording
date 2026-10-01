@@ -452,6 +452,9 @@ export function applyFollowupChange(
   patch: Partial<ErhebungRow>,
   now: Date = new Date(),
 ): { erhebung: ErhebungRow; ereignisse: EreignisInsert[] } {
+  if (erhebung.followup_status === "abgeschlossen") {
+    return { erhebung, ereignisse: [] };
+  }
   const next = applyFollowupPatch(erhebung, patch);
   const ereignisse = followupEreignisseFromPatch(next, erhebung, patch);
 
