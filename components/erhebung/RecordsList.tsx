@@ -1,18 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import AppDialog from "@/components/erhebung/AppDialog";
+import ExamElapsedClock from "@/components/erhebung/ExamElapsedClock";
+import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
 import type { ErhebungListItem } from "@/lib/db/erhebungen";
 import { softDeleteErhebung } from "@/lib/db/erhebungen";
+import { getDecisionClocks } from "@/lib/nihss/duration";
+import { erhebungStatusParts } from "@/lib/nihss/erhebung-status";
+import {
+  EMPTY_RECORDS_FILTERS,
+  filterErhebungRows,
+  type RecordsListFilters,
+  type RecordsStatusFilter,
+  type RecordsTypFilter,
+} from "@/lib/nihss/records-filter";
 import {
   formatBerlinDate,
   formatBerlinTime,
 } from "@/lib/nihss/timeline";
-import ExamElapsedClock from "@/components/erhebung/ExamElapsedClock";
-import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
-import { erhebungStatusParts } from "@/lib/nihss/erhebung-status";
-import { getDecisionClocks } from "@/lib/nihss/duration";
 
 function ErhebungStatus({
   row,
@@ -62,6 +70,46 @@ function ErhebungsIdCreatedAt({
 
 const DELETE_CONFIRMATION =
   "Diese Erhebung wirklich löschen? Sie wird ausgeblendet, bleibt aber in der Datenbank erhalten.";
+
+function FilterChip({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+        selected
+          ? "bg-tempis-blue-dark text-white"
+          : "border border-border bg-surface text-foreground"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function FilterRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="mr-1 text-xs font-semibold text-muted">{label}</span>
+      {children}
+    </div>
+  );
+}
 
 function RecordDuration({
   startAt,
@@ -143,20 +191,30 @@ function RecordActions({
 export default function RecordsList({ initialRows }: RecordsListProps) {
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
+  const [filters, setFilters] = useState<RecordsListFilters>(EMPTY_RECORDS_FILTERS);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const visibleRows = useMemo(
+    () => filterErhebungRows(rows, filters),
+    [rows, filters],
+  );
 
-  async function confirmDelete(id: string) {
-    const confirmed = window.confirm(DELETE_CONFIRMATION);
-    if (!confirmed) {
+  function requestDelete(id: string) {
+    setDeleteId(id);
+  }
+
+  async function confirmDelete() {
+    if (!deleteId) {
       return;
     }
-
+    const id = deleteId;
     setPendingId(id);
     setError(null);
     try {
       await softDeleteErhebung(id);
       setRows((current) => current.filter((row) => row.id !== id));
+      setDeleteId(null);
       router.refresh();
     } catch (caught) {
       setError(
@@ -180,14 +238,106 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
     );
   }
 
+  const deleteRow = rows.find((row) => row.id === deleteId);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       {error ? (
         <p className="text-sm text-tempis-signal">{error}</p>
       ) : null}
 
+      <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
+        <label className="block text-xs font-semibold text-muted" htmlFor="records-search">
+          Suche nach Erhebungs-ID
+        </label>
+        <input
+          id="records-search"
+          type="search"
+          value={filters.query}
+          onChange={(event) =>
+            setFilters((current) => ({ ...current, query: event.target.value }))
+          }
+          placeholder="z. B. Teil der ID"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+        />
+        <FilterRow label="Typ">
+          {(
+            [
+              ["all", "Alle"],
+              ["Echter Patient", "Echter Patient"],
+              ["Test", "Test"],
+            ] as const
+          ).map(([value, label]) => (
+            <FilterChip
+              key={value}
+              selected={filters.typ === value}
+              onClick={() =>
+                setFilters((current) => ({
+                  ...current,
+                  typ: value as RecordsTypFilter,
+                }))
+              }
+            >
+              {label}
+            </FilterChip>
+          ))}
+        </FilterRow>
+        <FilterRow label="Untersuchung">
+          {(
+            [
+              ["all", "Alle"],
+              ["offen", "offen"],
+              ["abgeschlossen", "abgeschlossen"],
+            ] as const
+          ).map(([value, label]) => (
+            <FilterChip
+              key={`u-${value}`}
+              selected={filters.untersuchung === value}
+              onClick={() =>
+                setFilters((current) => ({
+                  ...current,
+                  untersuchung: value as RecordsStatusFilter,
+                }))
+              }
+            >
+              {label}
+            </FilterChip>
+          ))}
+        </FilterRow>
+        <FilterRow label="Fragen">
+          {(
+            [
+              ["all", "Alle"],
+              ["offen", "offen"],
+              ["abgeschlossen", "abgeschlossen"],
+            ] as const
+          ).map(([value, label]) => (
+            <FilterChip
+              key={`f-${value}`}
+              selected={filters.fragen === value}
+              onClick={() =>
+                setFilters((current) => ({
+                  ...current,
+                  fragen: value as RecordsStatusFilter,
+                }))
+              }
+            >
+              {label}
+            </FilterChip>
+          ))}
+        </FilterRow>
+      </div>
+
+      {visibleRows.length === 0 ? (
+        <section className="rounded-xl border border-border bg-surface p-6 text-center">
+          <p className="font-medium text-foreground">
+            Keine Erhebungen für diese Filter
+          </p>
+        </section>
+      ) : (
+        <>
       <ul className="min-h-0 flex-1 space-y-3 overflow-y-auto md:hidden">
-        {rows.map((row) => {
+        {visibleRows.map((row) => {
           const clocks = clocksFor(row);
           return (
           <li
@@ -238,7 +388,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
               id={row.id}
               erhebungsId={row.erhebungs_id}
               pendingId={pendingId}
-              onDelete={confirmDelete}
+              onDelete={requestDelete}
             />
           </li>
           );
@@ -269,7 +419,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => {
+            {visibleRows.map((row) => {
               const clocks = clocksFor(row);
               return (
               <tr key={row.id} className="border-t border-border">
@@ -323,7 +473,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
                     id={row.id}
                     erhebungsId={row.erhebungs_id}
                     pendingId={pendingId}
-                    onDelete={confirmDelete}
+                    onDelete={requestDelete}
                   />
                 </td>
               </tr>
@@ -332,6 +482,42 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
           </tbody>
         </table>
       </div>
+        </>
+      )}
+
+      {deleteId ? (
+        <AppDialog
+          title="Erhebung löschen"
+          dismissible
+          onClose={() => setDeleteId(null)}
+        >
+          <p className="text-sm">{DELETE_CONFIRMATION}</p>
+          {deleteRow ? (
+            <p className="text-sm text-muted" title={deleteRow.erhebungs_id}>
+              {deleteRow.erhebungs_id}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                void confirmDelete();
+              }}
+              disabled={pendingId === deleteId}
+              className="rounded-lg bg-tempis-signal px-4 py-2 font-semibold text-white disabled:opacity-60"
+            >
+              Löschen
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeleteId(null)}
+              className="rounded-lg border border-border px-4 py-2 font-semibold"
+            >
+              Abbrechen
+            </button>
+          </div>
+        </AppDialog>
+      ) : null}
     </div>
   );
 }

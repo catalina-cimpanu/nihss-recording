@@ -73,6 +73,58 @@ export default function EinfuehrungPage() {
         </ol>
       </section>
 
+      <section
+        id="kurzanleitung"
+        className="space-y-3 rounded-xl border border-border bg-surface p-4"
+      >
+        <h2 className="text-lg font-semibold">Kurzanleitung</h2>
+        <ol className="list-decimal space-y-3 pl-5 text-sm">
+          <li>
+            <strong>Erhebung erstellen.</strong> Unter Neue Erhebung wählen Sie
+            Test oder Echter Patient. Optional Solo-Patienten-ID (nur Ziffern)
+            und eine bekannte Lyse-Kontraindikation vor der Untersuchung
+            angeben oder überspringen.
+          </li>
+          <li>
+            <strong>Untersuchung starten.</strong> Sobald das Videokonsil läuft
+            und Sie mit der NIHSS beginnen:{" "}
+            <strong>Untersuchung starten</strong> oder das erste NIHSS-Item
+            antippen. Danach die Fragen in der vorgegebenen Reihenfolge
+            beantworten.
+          </li>
+          <li>
+            <strong>Stroke und Lyse während der Untersuchung.</strong> Die
+            Buttons oben sind hypothetisch, nur nach Klinik. Sobald Sie
+            entscheiden würden: sofort klicken (wichtig für die Zeiten Start →
+            Stroke und Stroke → Lyse). Kontraindikationen und die spätere
+            TEMPiS-Empfehlung spielen hier keine Rolle.
+          </li>
+          <li>
+            <strong>Untersuchung beenden.</strong> Es folgen, falls nötig,
+            Hinweise zu fehlenden Feldern, dann hypothetische Stroke/Lyse{" "}
+            <em>nach</em> vollständigem NIHSS, dann die Bestätigung. Die
+            NIHSS-Angaben sind danach nur noch lesbar. Die Popups zeigen{" "}
+            <strong>Schritt x von y</strong>.
+          </li>
+          <li>
+            <strong>Angaben zum Konsil.</strong> TEMPiS-Verdacht und
+            -Empfehlung, Kontraindikationen, Umstände. Nach der Untersuchung
+            können Sie bei Kontraindikationen <strong>Keine</strong> wählen,
+            wenn nichts Weiteres bekannt geworden ist.{" "}
+            <strong>Nur speichern</strong> lässt die Felder auf der
+            Erhebungsseite änderbar.{" "}
+            <strong>Erhebung speichern und abschließen</strong> sperrt sie.
+          </li>
+          <li>
+            <strong>Liste, Dashboard, CSV.</strong> Unter Erhebungen finden und
+            öffnen Sie Fälle (Suche und Filter nach Test/Patient und Status).
+            Das Dashboard zeigt Kennzahlen nur für echte Patienten. CSV:
+            Untersuchungen exportiert alle Erhebungen; das Klickprotokoll einer
+            einzelnen Untersuchung laden Sie in der Erhebung.
+          </li>
+        </ol>
+      </section>
+
       <section className="space-y-2 rounded-xl border border-tempis-orange bg-tempis-ice p-4">
         <h2 className="text-lg font-semibold">Beispiel</h2>
         <p className="text-sm">

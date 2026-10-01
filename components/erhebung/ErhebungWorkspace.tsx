@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import AfterCompletionDialog from "@/components/erhebung/AfterCompletionDialog";
-import AppDialog from "@/components/erhebung/AppDialog";
-import FollowupDialog from "@/components/erhebung/FollowupDialog";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import ErhebungExamDialogs from "@/components/erhebung/ErhebungExamDialogs";
+import ErhebungNihssForm from "@/components/erhebung/ErhebungNihssForm";
 import FollowupFields from "@/components/erhebung/FollowupFields";
 import ExamViewToggle from "@/components/erhebung/ExamViewToggle";
-import FieldOptions from "@/components/erhebung/FieldOptions";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
 import ScrollToTopButton from "@/components/erhebung/ScrollToTopButton";
 import StickyScoreBar from "@/components/erhebung/StickyScoreBar";
@@ -19,14 +17,10 @@ import WarningToasts, {
 import optionStyles from "@/components/nihss_items/nihssOptions.module.css";
 import { useQueuedPersist } from "@/components/erhebung/useQueuedPersist";
 import {
-  FORM_SECTIONS,
   LYSE_FIELD,
   NIHSS_FIELDS,
   STROKE_FIELD,
-  getFieldByKey,
-  getSelectedFieldColor,
   type ClickableField,
-  type ScoreColor,
 } from "@/lib/nihss/config";
 import {
   applyAfterCompletionClick,
@@ -46,17 +40,11 @@ import {
 import {
   applyFollowupChange,
   emptyFollowupValues,
-  type FollowupValues,
 } from "@/lib/nihss/followup";
 import {
-  closeFlowStep,
-  formatCloseFlowStep,
-  type CloseFlowStage,
+  INITIAL_CLOSE_FLOW,
+  reduceCloseFlow,
 } from "@/lib/nihss/close-flow";
-import {
-  erhebungCloseConfirmQuestion,
-  missingFollowupLabels,
-} from "@/lib/nihss/erhebung-status";
 import { formatBerlinTime } from "@/lib/nihss/timeline";
 import {
   getAtaxiaIncompleteLabel,
@@ -66,7 +54,6 @@ import {
   hasAtaxiaScoreWithoutLimbFinding,
   hasInvalidAtaxiaLimbCount,
   hasLyseJaWithKeinStroke,
-  isExamLongerThan60Minutes,
   isRapidRepeatClick,
 } from "@/lib/nihss/validation-exam";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
@@ -79,103 +66,15 @@ function findOption(field: ClickableField, value: string) {
   return field.options.find((option) => option.value === value);
 }
 
-function fieldFrameClass(color: ScoreColor | null): string {
-  if (!color) {
-    return optionStyles.fieldFrameEmpty;
-  }
-
-  const frames: Record<ScoreColor, string> = {
-    score0: optionStyles.fieldFrameScore0,
-    score1: optionStyles.fieldFrameScore1,
-    score2: optionStyles.fieldFrameScore2,
-    score3: optionStyles.fieldFrameScore3,
-    score4: optionStyles.fieldFrameScore4,
-    scoreUN: optionStyles.fieldFrameScoreUN,
-    stroke: optionStyles.fieldFrameEmpty,
-    lyse: optionStyles.fieldFrameEmpty,
-    side: optionStyles.fieldFrameSide,
-  };
-
-  return frames[color];
-}
-
-function closeDialogMessage(args: {
-  isIncomplete: boolean;
-  missingFieldLabels: string[];
-  ataxiaIncompleteLabel: string | null;
-  undecidedStrokeLyse: string[];
-  lyseJaWithKeinStroke: boolean;
-  longerThan60Minutes: boolean;
-  needsCloseAnyway: boolean;
-  continueQuestion?: string;
-}): string {
-  const parts: string[] = [];
-
-  if (args.isIncomplete) {
-    parts.push(
-      `Die Erhebung ist unvollständig. Fehlende NIHSS-Felder: ${[
-        ...args.missingFieldLabels,
-        ...(args.ataxiaIncompleteLabel ? [args.ataxiaIncompleteLabel] : []),
-      ].join(", ")}.`,
-    );
-  }
-
-  if (args.lyseJaWithKeinStroke) {
-    parts.push("Kein Stroke und Lyse Ja gehören nicht zusammen.");
-  }
-
-  if (args.undecidedStrokeLyse.length === 2) {
-    parts.push("Stroke und Lyse sind noch nicht entschieden.");
-  } else if (args.undecidedStrokeLyse.length === 1) {
-    parts.push(`${args.undecidedStrokeLyse[0]} ist noch nicht entschieden.`);
-  }
-
-  if (args.longerThan60Minutes) {
-    parts.push("Die Untersuchungsdauer beträgt mehr als 60 Minuten.");
-  }
-
-  if (!args.needsCloseAnyway) {
-    return `Untersuchung beenden und als abgeschlossen markieren?${
-      args.longerThan60Minutes
-        ? " Die Untersuchungsdauer beträgt mehr als 60 Minuten."
-        : ""
-    }`;
-  }
-
-  return `${parts.join(" ")} ${args.continueQuestion ?? "Trotzdem abschließen?"}`;
-}
-
-function ErhebungCloseWarningBody({ values }: { values: FollowupValues }) {
-  const missing = missingFollowupLabels(values);
-  return (
-    <>
-      {missing.length > 0 ? (
-        <div className="space-y-2 text-sm">
-          <p>Nicht alle Angaben zum Konsil sind ausgefüllt:</p>
-          <ul className="list-disc space-y-1 pl-5">
-            {missing.map((label) => (
-              <li key={label}>{label}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      <p className="text-sm">{erhebungCloseConfirmQuestion(missing)}</p>
-    </>
-  );
-}
-
 export default function ErhebungWorkspace({
   initialErhebung,
 }: ErhebungWorkspaceProps) {
   const [erhebung, setErhebung] = useState(initialErhebung);
   const [error, setError] = useState<string | null>(null);
-  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
-  const [warningDialogOpen, setWarningDialogOpen] = useState(false);
-  const [afterCompletionOpen, setAfterCompletionOpen] = useState(false);
-  const [followupOpen, setFollowupOpen] = useState(false);
-  const [erhebungCloseOpen, setErhebungCloseOpen] = useState(false);
-  const [strokeLyseOrderOpen, setStrokeLyseOrderOpen] = useState(false);
-  const [closeFlowHasWarning, setCloseFlowHasWarning] = useState(false);
+  const [closeFlow, dispatchCloseFlow] = useReducer(
+    reduceCloseFlow,
+    INITIAL_CLOSE_FLOW,
+  );
   const [popupStroke, setPopupStroke] = useState<string | null>(null);
   const [popupLyse, setPopupLyse] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
@@ -189,9 +88,22 @@ export default function ErhebungWorkspace({
   const erhebungRef = useRef(erhebung);
   const autoCloseLockRef = useRef(false);
   const followupTextTimerRef = useRef<number | null>(null);
-  const { persistQueued, saveStatus, saveError, isSaving } =
-    useQueuedPersist(initialErhebung);
+  const {
+    persistQueued,
+    retryQueued,
+    saveStatus,
+    saveError,
+    isSaving,
+    restoredLatest,
+  } = useQueuedPersist(initialErhebung);
   erhebungRef.current = erhebung;
+
+  useEffect(() => {
+    if (restoredLatest) {
+      setErhebung(restoredLatest);
+      erhebungRef.current = restoredLatest;
+    }
+  }, [restoredLatest]);
 
   const followupClosed = erhebung.followup_status === "abgeschlossen";
   const readOnly = erhebung.untersuchung_status === "abgeschlossen";
@@ -315,11 +227,7 @@ export default function ErhebungWorkspace({
       }
 
       autoCloseLockRef.current = true;
-      setWarningDialogOpen(false);
-      setAfterCompletionOpen(false);
-      setFollowupOpen(false);
-      setCloseDialogOpen(false);
-      setErhebungCloseOpen(false);
+      dispatchCloseFlow({ type: "auto-close-exam" });
       const result = applyLifecycleEvent({
         erhebung: current,
         now: stopAt,
@@ -332,7 +240,7 @@ export default function ErhebungWorkspace({
   }, [readOnly, isSaving, erhebung.id, erhebung.startzeit_untersuchung]);
 
   async function handleSelect(field: ClickableField, value: string) {
-    if (readOnly || strokeLyseOrderOpen) {
+    if (readOnly || closeFlow.lyseOrder) {
       return;
     }
 
@@ -361,7 +269,7 @@ export default function ErhebungWorkspace({
       isLyseBeforeStroke(result.erhebung) &&
       !result.erhebung.stroke_lyse_gleichzeitig
     ) {
-      setStrokeLyseOrderOpen(true);
+      dispatchCloseFlow({ type: "lyse-order-open" });
     }
   }
 
@@ -370,7 +278,7 @@ export default function ErhebungWorkspace({
       erhebung: erhebungRef.current,
       now: new Date(),
     });
-    setStrokeLyseOrderOpen(false);
+    dispatchCloseFlow({ type: "lyse-order-close" });
     if (result.ereignisse.length === 0) {
       return;
     }
@@ -382,7 +290,7 @@ export default function ErhebungWorkspace({
       erhebung: erhebungRef.current,
       now: new Date(),
     });
-    setStrokeLyseOrderOpen(false);
+    dispatchCloseFlow({ type: "lyse-order-close" });
     if (result.ereignisse.length === 0) {
       return;
     }
@@ -407,7 +315,7 @@ export default function ErhebungWorkspace({
   }
 
   async function handleStopRequest() {
-    if (readOnly || strokeLyseOrderOpen) {
+    if (readOnly || closeFlow.lyseOrder) {
       return;
     }
     if (!erhebung.startzeit_untersuchung) {
@@ -415,37 +323,30 @@ export default function ErhebungWorkspace({
       return;
     }
 
-    if (needsIncompleteWarning || needsDecisionWarning) {
-      setCloseFlowHasWarning(true);
-      setWarningDialogOpen(true);
-      return;
+    dispatchCloseFlow({
+      type: "stop-requested",
+      needsWarning: needsIncompleteWarning || needsDecisionWarning,
+    });
+    if (!(needsIncompleteWarning || needsDecisionWarning)) {
+      const current = erhebungRef.current;
+      setPopupStroke(current.stroke_after_completion_status);
+      setPopupLyse(current.lyse_after_completion_status);
     }
-
-    setCloseFlowHasWarning(false);
-    proceedToAfterCompletion();
   }
 
   function proceedToAfterCompletion() {
-    setWarningDialogOpen(false);
-    setCloseDialogOpen(false);
-    setFollowupOpen(false);
     const current = erhebungRef.current;
     setPopupStroke(current.stroke_after_completion_status);
     setPopupLyse(current.lyse_after_completion_status);
-    setAfterCompletionOpen(true);
+    dispatchCloseFlow({ type: "warning-continue" });
   }
 
   function proceedToFollowup() {
-    setWarningDialogOpen(false);
-    setAfterCompletionOpen(false);
-    setCloseDialogOpen(false);
-    setFollowupOpen(true);
+    dispatchCloseFlow({ type: "exam-closed" });
   }
 
   function proceedToFinalClose() {
-    setAfterCompletionOpen(false);
-    setFollowupOpen(false);
-    setCloseDialogOpen(true);
+    dispatchCloseFlow({ type: "after-continue" });
   }
 
   function clearFollowupTextTimer() {
@@ -478,13 +379,13 @@ export default function ErhebungWorkspace({
   async function handleFollowupFinish() {
     clearFollowupTextTimer();
     await persist(erhebungRef.current, []);
-    setFollowupOpen(false);
+    dispatchCloseFlow({ type: "followup-saved" });
   }
 
   async function handleFollowupSaveAndClose() {
     clearFollowupTextTimer();
     void persist(erhebungRef.current, []);
-    setErhebungCloseOpen(true);
+    dispatchCloseFlow({ type: "followup-close-requested" });
   }
 
   async function handleAfterCompletionSelect(
@@ -520,18 +421,11 @@ export default function ErhebungWorkspace({
       erhebung.startzeit_untersuchung &&
       stopAt.getTime() < new Date(erhebung.startzeit_untersuchung).getTime()
     ) {
-      setWarningDialogOpen(false);
-      setAfterCompletionOpen(false);
-      setFollowupOpen(false);
-      setCloseDialogOpen(false);
+      dispatchCloseFlow({ type: "cancel-exam-flow" });
       setError("Die Endzeit wäre vor der Startzeit. Bitte Uhrzeit prüfen.");
       return;
     }
 
-    setWarningDialogOpen(false);
-    setAfterCompletionOpen(false);
-    setFollowupOpen(false);
-    setCloseDialogOpen(false);
     const result = applyLifecycleEvent({
       erhebung,
       now: stopAt,
@@ -543,17 +437,15 @@ export default function ErhebungWorkspace({
 
   async function confirmErhebungClose() {
     if (erhebungRef.current.followup_status === "abgeschlossen") {
-      setErhebungCloseOpen(false);
-      setFollowupOpen(false);
+      dispatchCloseFlow({ type: "erhebung-closed" });
       return;
     }
-    setErhebungCloseOpen(false);
-    setFollowupOpen(false);
     const result = applyErhebungClose({
       erhebung: erhebungRef.current,
       now: new Date(),
     });
     await persist(result.erhebung, result.ereignisse);
+    dispatchCloseFlow({ type: "erhebung-closed" });
   }
 
   async function markMissingAsNormal() {
@@ -580,10 +472,6 @@ export default function ErhebungWorkspace({
     map.set(LYSE_FIELD.key, LYSE_FIELD);
     return map;
   }, []);
-
-  function closeStepLabel(stage: CloseFlowStage): string {
-    return formatCloseFlowStep(closeFlowStep(stage, closeFlowHasWarning));
-  }
 
   return (
     <div>
@@ -626,7 +514,7 @@ export default function ErhebungWorkspace({
             <button
               type="button"
               onClick={() => {
-                void persistQueued(erhebungRef.current, []);
+                void retryQueued();
               }}
               className="rounded-lg bg-tempis-blue-dark px-3 py-1.5 font-semibold text-white hover:bg-tempis-blue-darker"
             >
@@ -672,246 +560,56 @@ export default function ErhebungWorkspace({
           </p>
         ) : null}
 
-        {afterCompletionOpen ? (
-          <AfterCompletionDialog
-            erhebung={{
-              ...erhebung,
-              stroke_after_completion_status:
-                popupStroke === "Ja" || popupStroke === "Kein Stroke"
-                  ? popupStroke
-                  : null,
-              lyse_after_completion_status:
-                popupLyse === "Ja" || popupLyse === "Keine Lyse"
-                  ? popupLyse
-                  : null,
-            }}
-            canContinue={Boolean(popupStroke && popupLyse)}
-            stepLabel={closeStepLabel("afterCompletion")}
-            onSelect={handleAfterCompletionSelect}
-            onContinue={proceedToFinalClose}
-            onCancel={() => setAfterCompletionOpen(false)}
-          />
-        ) : null}
-
-        {followupOpen ? (
-          <FollowupDialog
-            values={erhebung}
-            stepLabel={closeStepLabel("followup")}
-            inert={erhebungCloseOpen}
-            onChange={handleFollowupChange}
-            onSave={() => {
-              void handleFollowupFinish();
-            }}
-            onCloseErhebung={() => {
-              void handleFollowupSaveAndClose();
-            }}
-          />
-        ) : null}
-
-        {warningDialogOpen ? (
-          <AppDialog
-            title="Hinweise"
-            stepLabel={closeStepLabel("warning")}
-            dismissible
-            onClose={() => setWarningDialogOpen(false)}
-          >
-            <p className="text-sm">
-              {closeDialogMessage({
-                isIncomplete,
-                missingFieldLabels: missingFields.map((field) => field.label),
-                ataxiaIncompleteLabel,
-                undecidedStrokeLyse,
-                lyseJaWithKeinStroke,
-                longerThan60Minutes: false,
-                needsCloseAnyway: true,
-                continueQuestion: "Trotzdem fortfahren?",
-              })}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={proceedToAfterCompletion}
-                className="rounded-lg bg-tempis-signal px-4 py-2 font-semibold text-white"
-              >
-                Trotzdem fortfahren
-              </button>
-              {canNormalizeMissing ? (
-                <button
-                  type="button"
-                  onClick={markMissingAsNormal}
-                  className="rounded-lg bg-tempis-blue-dark px-4 py-2 font-semibold text-white hover:bg-tempis-blue-darker"
-                >
-                  Alle fehlenden Felder als normal markieren
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => setWarningDialogOpen(false)}
-                className="rounded-lg border border-border px-4 py-2 font-semibold"
-              >
-                Abbrechen
-              </button>
-            </div>
-          </AppDialog>
-        ) : null}
-
-        {strokeLyseOrderOpen ? (
-          <AppDialog
-            label="Lyse vor Stroke"
-            dismissible={false}
-          >
-            <p className="text-sm">
-                Lyse wurde vor Stroke dokumentiert. Bitte wählen, wie damit
-                umgegangen werden soll.
-              </p>
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    void confirmLyseReset();
-                  }}
-                  className="rounded-lg border border-border px-4 py-2 text-left font-semibold"
-                >
-                  Ich habe mich verklickt
-                  <span className="mt-0.5 block text-xs font-medium text-muted">
-                    Lyse-Auswahl zurücksetzen
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void confirmStrokeLyseSimultaneous();
-                  }}
-                  className="rounded-lg bg-tempis-blue-dark px-4 py-2 text-left font-semibold text-white hover:bg-tempis-blue-darker"
-                >
-                  Ich habe beide gleichzeitig entschieden
-                  <span className="mt-0.5 block text-xs font-medium text-white/80">
-                    Stroke → Lyse als 0 Sek. speichern
-                  </span>
-                </button>
-              </div>
-          </AppDialog>
-        ) : null}
-
-        {closeDialogOpen ? (
-          <AppDialog
-            title="Untersuchung beenden"
-            stepLabel={closeStepLabel("examClose")}
-            dismissible
-            onClose={() => setCloseDialogOpen(false)}
-          >
-            <p className="text-sm">
-              Untersuchung beenden und als abgeschlossen markieren?
-              {isExamLongerThan60Minutes(erhebung)
-                ? " Die Untersuchungsdauer beträgt mehr als 60 Minuten."
-                : ""}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={confirmStop}
-                className="rounded-lg bg-tempis-signal px-4 py-2 font-semibold text-white"
-              >
-                Untersuchung beenden
-              </button>
-              <button
-                type="button"
-                onClick={() => setCloseDialogOpen(false)}
-                className="rounded-lg border border-border px-4 py-2 font-semibold"
-              >
-                Abbrechen
-              </button>
-            </div>
-          </AppDialog>
-        ) : null}
-
-        {erhebungCloseOpen ? (
-          <AppDialog
-            title="Erhebung abschließen"
-            stepLabel={followupOpen ? closeStepLabel("followup") : undefined}
-            dismissible
-            onClose={() => setErhebungCloseOpen(false)}
-            zClass="z-[80]"
-          >
-              <ErhebungCloseWarningBody
-                values={{ ...emptyFollowupValues(), ...erhebung }}
-              />
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    void confirmErhebungClose();
-                  }}
-                  className="rounded-lg bg-tempis-signal px-4 py-2 font-semibold text-white"
-                >
-                  Erhebung abschließen
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setErhebungCloseOpen(false)}
-                  className="rounded-lg border border-border px-4 py-2 font-semibold"
-                >
-                  Abbrechen
-                </button>
-              </div>
-          </AppDialog>
-        ) : null}
-
-        {FORM_SECTIONS.map((section) => {
-          const fields = section.fieldKeys
-            .map((key) => fieldMap.get(key) ?? getFieldByKey(key))
-            .filter((field): field is ClickableField => Boolean(field))
-            .filter((field) => !field.visibleWhen || field.visibleWhen(erhebung));
-
-          if (fields.length === 0) {
-            return null;
+        <ErhebungExamDialogs
+          closeFlow={closeFlow}
+          erhebung={erhebung}
+          popupStroke={popupStroke}
+          popupLyse={popupLyse}
+          isIncomplete={isIncomplete}
+          missingFieldLabels={missingFields.map((field) => field.label)}
+          ataxiaIncompleteLabel={ataxiaIncompleteLabel}
+          undecidedStrokeLyse={undecidedStrokeLyse}
+          lyseJaWithKeinStroke={lyseJaWithKeinStroke}
+          canNormalizeMissing={canNormalizeMissing}
+          onAfterSelect={handleAfterCompletionSelect}
+          onAfterContinue={proceedToFinalClose}
+          onAfterCancel={() => dispatchCloseFlow({ type: "cancel-exam-flow" })}
+          onFollowupChange={handleFollowupChange}
+          onFollowupSave={() => {
+            void handleFollowupFinish();
+          }}
+          onFollowupCloseErhebung={() => {
+            void handleFollowupSaveAndClose();
+          }}
+          onWarningContinue={proceedToAfterCompletion}
+          onNormalizeMissing={() => {
+            void markMissingAsNormal();
+          }}
+          onCancelExamFlow={() => dispatchCloseFlow({ type: "cancel-exam-flow" })}
+          onLyseReset={() => {
+            void confirmLyseReset();
+          }}
+          onLyseSimultaneous={() => {
+            void confirmStrokeLyseSimultaneous();
+          }}
+          onConfirmExamClose={() => {
+            void confirmStop();
+          }}
+          onConfirmErhebungClose={() => {
+            void confirmErhebungClose();
+          }}
+          onCancelErhebungConfirm={() =>
+            dispatchCloseFlow({ type: "erhebung-confirm-cancel" })
           }
+        />
 
-          return (
-            <section
-              key={section.title}
-              className={`rounded-xl border border-border bg-surface ${
-                viewMode === "compact" ? "space-y-2 p-2.5" : "space-y-3 p-3"
-              }`}
-            >
-              <div>
-                <h2 className="text-lg font-semibold">{section.title}</h2>
-                {section.prompt ? (
-                  <p className="mt-1 text-sm text-muted">{section.prompt}</p>
-                ) : null}
-              </div>
-              {fields.map((field) => {
-                const selectionColor = getSelectedFieldColor(field, erhebung);
-                const frameColorClass = fieldFrameClass(selectionColor);
-
-                return (
-                  <div
-                    key={field.key}
-                    className={`space-y-2 ${optionStyles.fieldFrame} ${frameColorClass}`}
-                  >
-                    <h3 className="text-sm font-semibold">{field.label}</h3>
-                    {field.selection === "multiple" ? (
-                      <p className="text-xs text-muted">
-                        Mehrfachauswahl möglich
-                      </p>
-                    ) : null}
-                    <FieldOptions
-                      field={field}
-                      erhebung={erhebung}
-                      readOnly={readOnly}
-                      viewMode={viewMode}
-                      compact={
-                        field.selection === "multiple" ||
-                        field.options.every((option) => option.color === "side")
-                      }
-                      onSelect={handleSelect}
-                    />
-                  </div>
-                );
-              })}
-            </section>
-          );
-        })}
+        <ErhebungNihssForm
+          erhebung={erhebung}
+          readOnly={readOnly}
+          viewMode={viewMode}
+          fieldMap={fieldMap}
+          onSelect={handleSelect}
+        />
 
         {readOnly ? (
           <>
@@ -933,7 +631,9 @@ export default function ErhebungWorkspace({
               {!followupClosed ? (
                 <button
                   type="button"
-                  onClick={() => setErhebungCloseOpen(true)}
+                  onClick={() =>
+                    dispatchCloseFlow({ type: "open-erhebung-confirm" })
+                  }
                   className="rounded-lg bg-tempis-signal px-4 py-3 font-semibold text-white"
                 >
                   Erhebung abschließen
@@ -1003,21 +703,32 @@ export default function ErhebungWorkspace({
         <ScrollToTopButton className="bottom-4" />
       )}
 
-      {saveStatus === "saving" || saveStatus === "saved" || saveStatus === "error" ? (
+      {saveStatus === "saving" ||
+      saveStatus === "saved" ||
+      saveStatus === "error" ||
+      saveStatus === "retrying" ? (
         <p
-          role={saveStatus === "error" ? "button" : undefined}
-          tabIndex={saveStatus === "error" ? 0 : undefined}
+          role={
+            saveStatus === "error" || saveStatus === "retrying"
+              ? "button"
+              : undefined
+          }
+          tabIndex={
+            saveStatus === "error" || saveStatus === "retrying" ? 0 : undefined
+          }
           onClick={
-            saveStatus === "error"
+            saveStatus === "error" || saveStatus === "retrying"
               ? () => {
-                  void persistQueued(erhebungRef.current, []);
+                  void retryQueued();
                 }
               : undefined
           }
           className={`fixed left-1/2 z-[60] -translate-x-1/2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg ${
             saveStatus === "error"
               ? "pointer-events-auto cursor-pointer bg-tempis-signal"
-              : "pointer-events-none bg-tempis-blue-dark"
+              : saveStatus === "retrying"
+                ? "pointer-events-auto cursor-pointer bg-tempis-orange"
+                : "pointer-events-none bg-tempis-blue-dark"
           } ${
             readOnly
               ? "bottom-4"
@@ -1028,7 +739,9 @@ export default function ErhebungWorkspace({
             ? "Speichert…"
             : saveStatus === "saved"
               ? "Gespeichert"
-              : "Speichern fehlgeschlagen — antippen zum Wiederholen"}
+              : saveStatus === "retrying"
+                ? "Keine Verbindung — Speichern wird wiederholt"
+                : "Speichern fehlgeschlagen — antippen zum Wiederholen"}
         </p>
       ) : null}
     </div>

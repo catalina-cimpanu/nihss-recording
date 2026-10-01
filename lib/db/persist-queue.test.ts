@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { createErhebungPersistQueue } from "@/lib/db/persist-queue";
+import {
+  createErhebungPersistQueue,
+  persistQueueStorageKey,
+  readPersistQueueSnapshot,
+  writePersistQueueSnapshot,
+} from "@/lib/db/persist-queue";
 import type {
   EreignisInsert,
   ErhebungRow,
@@ -92,5 +97,56 @@ describe("createErhebungPersistQueue", () => {
     await queue.enqueue(row({ nihss: 3 }), []);
 
     assert.deepEqual(calls, [2, 2]);
+  });
+
+  it("retries a restored snapshot without losing queued events", async () => {
+    const calls: number[] = [];
+    const first = createErhebungPersistQueue(row({ nihss: 0 }), async () => {
+      throw new Error("offline");
+    });
+    await assert.rejects(() => first.enqueue(row({ nihss: 4 }), [event("a")]));
+    const snapshot = first.getSnapshot();
+
+    const second = createErhebungPersistQueue(row({ nihss: 0 }), async (_next, events) => {
+      calls.push(events.length);
+    });
+    second.restore(snapshot);
+    await second.retry();
+    assert.deepEqual(calls, [1]);
+    assert.equal(second.isDirty(), false);
+  });
+});
+
+describe("persist queue sessionStorage snapshot", () => {
+  it("writes a dirty snapshot and clears it after a successful flush", () => {
+    const store = new Map<string, string>();
+    const storage = {
+      getItem(key: string) {
+        return store.get(key) ?? null;
+      },
+      setItem(key: string, value: string) {
+        store.set(key, value);
+      },
+      removeItem(key: string) {
+        store.delete(key);
+      },
+    };
+    const snapshot = {
+      lastPersisted: row({ nihss: 0 }),
+      latest: row({ nihss: 4 }),
+      pendingEvents: [event("a")],
+    };
+
+    writePersistQueueSnapshot(storage, "exam-1", snapshot, true);
+    assert.equal(
+      persistQueueStorageKey("exam-1"),
+      "nihss-persist-queue:exam-1",
+    );
+    const restored = readPersistQueueSnapshot(storage, "exam-1");
+    assert.equal(restored?.latest.nihss, 4);
+    assert.equal(restored?.pendingEvents.length, 1);
+
+    writePersistQueueSnapshot(storage, "exam-1", snapshot, false);
+    assert.equal(readPersistQueueSnapshot(storage, "exam-1"), null);
   });
 });

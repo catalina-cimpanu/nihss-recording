@@ -28,7 +28,10 @@ export default async function RecordsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
           Gelöschte Erhebungen werden ausgeblendet, bleiben aber in der
-          Datenbank erhalten.
+          Datenbank erhalten.{" "}
+          <Link href="/einfuehrung#kurzanleitung" className="underline">
+            Kurzanleitung
+          </Link>
         </p>
         <Link
           href="/new"

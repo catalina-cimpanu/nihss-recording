@@ -5,7 +5,7 @@ Next.js app for timed NIHSS documentation during a TEMPiS videoconsult. No patie
 ## Run locally
 
 1. Copy `.env.local.example` to `.env.local` and set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-2. Apply SQL in `supabase/migrations/` to the Supabase project, in filename order (`001` …), if the database is new or missing columns.
+2. Apply SQL in `supabase/migrations/` to the Supabase project, in filename order (`001` … `012`), if the database is new or missing columns. Tick files in `supabase/migrations/README.md` after they run. `012` drops unused duration columns from `002`; the app computes durations in TypeScript, not from those columns.
 3. Install and start:
 
 ```bash
