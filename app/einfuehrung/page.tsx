@@ -43,8 +43,15 @@ export default function EinfuehrungPage() {
             <strong className="underline">nach</strong> vollständiger
             NIHSS-Erhebung angeben — ebenfalls hypothetisch, nur anhand des
             klinischen Befunds. Diese Angabe wird getrennt von den Klicks
-            während der Untersuchung gespeichert. Erst danach wird die
-            Untersuchung als abgeschlossen markiert.
+            während der Untersuchung gespeichert. Danach können optionale
+            Angaben zum Konsil ergänzt oder übersprungen werden. Erst danach
+            wird die Untersuchung als abgeschlossen markiert.
+          </li>
+          <li>
+            Nach <strong>Erhebung erstellen</strong> können Solo-Patienten-ID
+            (nur Ziffern) und eine bekannte Lyse-Kontraindikation vor der
+            Untersuchung angegeben oder übersprungen werden. Übersprungene
+            Angaben lassen sich am Ende nachtragen.
           </li>
         </ol>
       </section>

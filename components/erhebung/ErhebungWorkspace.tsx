@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import AfterCompletionDialog from "@/components/erhebung/AfterCompletionDialog";
+import FollowupDialog from "@/components/erhebung/FollowupDialog";
+import FollowupFields from "@/components/erhebung/FollowupFields";
 import ExamViewToggle from "@/components/erhebung/ExamViewToggle";
 import FieldOptions from "@/components/erhebung/FieldOptions";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
@@ -36,6 +38,7 @@ import {
   autoCloseStopAt,
   shouldAutoCloseExam,
 } from "@/lib/nihss/duration";
+import { applyFollowupChange, emptyFollowupValues } from "@/lib/nihss/followup";
 import { formatBerlinTime } from "@/lib/nihss/timeline";
 import {
   getAtaxiaIncompleteLabel,
@@ -132,6 +135,7 @@ export default function ErhebungWorkspace({
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
   const [afterCompletionOpen, setAfterCompletionOpen] = useState(false);
+  const [followupOpen, setFollowupOpen] = useState(false);
   const [popupStroke, setPopupStroke] = useState<string | null>(null);
   const [popupLyse, setPopupLyse] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -145,6 +149,7 @@ export default function ErhebungWorkspace({
   const seenDocWarningsRef = useRef<Set<string>>(new Set());
   const erhebungRef = useRef(erhebung);
   const autoCloseLockRef = useRef(false);
+  const followupTextTimerRef = useRef<number | null>(null);
   erhebungRef.current = erhebung;
 
   const readOnly = erhebung.status === "abgeschlossen";
@@ -198,6 +203,9 @@ export default function ErhebungWorkspace({
       for (const timer of toastTimersRef.current.values()) {
         window.clearTimeout(timer);
       }
+      if (followupTextTimerRef.current != null) {
+        window.clearTimeout(followupTextTimerRef.current);
+      }
     };
   }, []);
 
@@ -228,9 +236,12 @@ export default function ErhebungWorkspace({
   async function persist(
     next: ErhebungRow,
     ereignisse: Parameters<typeof persistErhebungAndEreignisse>[1],
+    silent = false,
   ) {
     setErhebung(next);
-    setIsSaving(true);
+    if (!silent) {
+      setIsSaving(true);
+    }
     setError(null);
     try {
       await persistErhebungAndEreignisse(next, ereignisse);
@@ -241,7 +252,9 @@ export default function ErhebungWorkspace({
           : "Speichern fehlgeschlagen. Bitte erneut klicken.",
       );
     } finally {
-      setIsSaving(false);
+      if (!silent) {
+        setIsSaving(false);
+      }
     }
   }
 
@@ -275,6 +288,7 @@ export default function ErhebungWorkspace({
       autoCloseLockRef.current = true;
       setWarningDialogOpen(false);
       setAfterCompletionOpen(false);
+      setFollowupOpen(false);
       setCloseDialogOpen(false);
       const result = applyLifecycleEvent({
         erhebung: current,
@@ -351,14 +365,53 @@ export default function ErhebungWorkspace({
   function proceedToAfterCompletion() {
     setWarningDialogOpen(false);
     setCloseDialogOpen(false);
+    setFollowupOpen(false);
     setPopupStroke(null);
     setPopupLyse(null);
     setAfterCompletionOpen(true);
   }
 
+  function proceedToFollowup() {
+    setWarningDialogOpen(false);
+    setAfterCompletionOpen(false);
+    setCloseDialogOpen(false);
+    setFollowupOpen(true);
+  }
+
   function proceedToFinalClose() {
     setAfterCompletionOpen(false);
+    setFollowupOpen(false);
     setCloseDialogOpen(true);
+  }
+
+  function clearFollowupTextTimer() {
+    if (followupTextTimerRef.current != null) {
+      window.clearTimeout(followupTextTimerRef.current);
+      followupTextTimerRef.current = null;
+    }
+  }
+
+  function handleFollowupChange(patch: Partial<ErhebungRow>) {
+    const result = applyFollowupChange(erhebungRef.current, patch);
+    erhebungRef.current = result.erhebung;
+    setErhebung(result.erhebung);
+
+    if (result.ereignisse.length > 0) {
+      clearFollowupTextTimer();
+      void persist(result.erhebung, result.ereignisse);
+      return;
+    }
+
+    clearFollowupTextTimer();
+    followupTextTimerRef.current = window.setTimeout(() => {
+      void persist(erhebungRef.current, [], true);
+    }, 400);
+  }
+
+  async function handleFollowupFinish() {
+    clearFollowupTextTimer();
+    await persist(erhebungRef.current, []);
+    proceedToFinalClose();
   }
 
   async function handleAfterCompletionSelect(
@@ -396,6 +449,7 @@ export default function ErhebungWorkspace({
     ) {
       setWarningDialogOpen(false);
       setAfterCompletionOpen(false);
+      setFollowupOpen(false);
       setCloseDialogOpen(false);
       setError("Die Endzeit wäre vor der Startzeit. Bitte Uhrzeit prüfen.");
       return;
@@ -403,6 +457,7 @@ export default function ErhebungWorkspace({
 
     setWarningDialogOpen(false);
     setAfterCompletionOpen(false);
+    setFollowupOpen(false);
     setCloseDialogOpen(false);
     const result = applyLifecycleEvent({
       erhebung,
@@ -456,7 +511,8 @@ export default function ErhebungWorkspace({
       >
         {readOnly ? (
           <p className="rounded-lg bg-tempis-ice px-3 py-2 text-sm">
-            Diese Erhebung ist abgeschlossen und nur noch lesbar.
+            Die Untersuchung ist abgeschlossen und die NIHSS-Angaben sind nur
+            noch lesbar. Angaben zum Konsil können weiter bearbeitet werden.
           </p>
         ) : null}
 
@@ -518,8 +574,21 @@ export default function ErhebungWorkspace({
             }}
             canContinue={Boolean(popupStroke && popupLyse)}
             onSelect={handleAfterCompletionSelect}
-            onContinue={proceedToFinalClose}
+            onContinue={proceedToFollowup}
             onCancel={() => setAfterCompletionOpen(false)}
+          />
+        ) : null}
+
+        {followupOpen ? (
+          <FollowupDialog
+            values={erhebung}
+            onChange={handleFollowupChange}
+            onContinue={() => {
+              void handleFollowupFinish();
+            }}
+            onSkip={() => {
+              void handleFollowupFinish();
+            }}
           />
         ) : null}
 
@@ -653,6 +722,24 @@ export default function ErhebungWorkspace({
             </section>
           );
         })}
+
+        {readOnly ? (
+          <section className="space-y-3 rounded-xl border border-border bg-surface p-3">
+            <div>
+              <h2 className="text-lg font-semibold">Angaben zum Konsil</h2>
+              <p className="mt-1 text-sm text-muted">
+                Diese Angaben können nach Beenden der Untersuchung noch geändert
+                werden.
+              </p>
+            </div>
+            <FollowupFields
+              values={{ ...emptyFollowupValues(), ...erhebung }}
+              mode="post"
+              preFields="always"
+              onChange={handleFollowupChange}
+            />
+          </section>
+        ) : null}
 
         <section className="space-y-3 rounded-xl border border-border bg-surface p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
