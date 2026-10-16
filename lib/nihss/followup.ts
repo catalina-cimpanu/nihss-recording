@@ -544,14 +544,18 @@ export function applyFollowupPatch(
     }
     if (!next[item.flag]) {
       next[item.text] = null;
-    } else if (typeof next[item.text] === "string") {
-      next[item.text] = clipShortText(next[item.text]) || null;
+    } else {
+      const text = next[item.text];
+      if (typeof text === "string") {
+        next[item.text] = clipShortText(text) || null;
+      }
     }
     if (item.textBefore in patch) {
       const previousText = erhebung[item.textBefore];
+      const incomingText = patch[item.textBefore];
       const incoming =
-        typeof patch[item.textBefore] === "string"
-          ? clipShortText(patch[item.textBefore]) || null
+        typeof incomingText === "string"
+          ? clipShortText(incomingText) || null
           : null;
       next[item.textBefore] = previousText || incoming;
     }
