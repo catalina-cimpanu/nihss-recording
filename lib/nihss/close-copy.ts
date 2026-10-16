@@ -2,7 +2,6 @@ export function closeDialogMessage(args: {
   isIncomplete: boolean;
   missingFieldLabels: string[];
   ataxiaIncompleteLabel: string | null;
-  undecidedStrokeLyse: string[];
   lyseJaWithKeinStroke: boolean;
   longerThan60Minutes: boolean;
   needsCloseAnyway: boolean;
@@ -21,12 +20,6 @@ export function closeDialogMessage(args: {
 
   if (args.lyseJaWithKeinStroke) {
     parts.push("Kein Stroke und Lyse Ja gehören nicht zusammen.");
-  }
-
-  if (args.undecidedStrokeLyse.length === 2) {
-    parts.push("Stroke und Lyse sind noch nicht entschieden.");
-  } else if (args.undecidedStrokeLyse.length === 1) {
-    parts.push(`${args.undecidedStrokeLyse[0]} ist noch nicht entschieden.`);
   }
 
   if (args.longerThan60Minutes) {

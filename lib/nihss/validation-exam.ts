@@ -157,17 +157,6 @@ export function hasLyseJaWithKeinStroke(erhebung: ErhebungRow): boolean {
   return erhebung.lyse_status === "Ja" && erhebung.stroke_status === "Kein Stroke";
 }
 
-export function getUndecidedStrokeLyseLabels(erhebung: ErhebungRow): string[] {
-  const labels: string[] = [];
-  if (erhebung.stroke_status === "nicht entschieden") {
-    labels.push("Stroke");
-  }
-  if (erhebung.lyse_status === "nicht entschieden") {
-    labels.push("Lyse");
-  }
-  return labels;
-}
-
 export function isExamLongerThan60Minutes(erhebung: ErhebungRow, now = new Date()): boolean {
   if (!erhebung.startzeit_untersuchung) {
     return false;

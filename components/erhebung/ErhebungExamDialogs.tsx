@@ -45,7 +45,6 @@ type ErhebungExamDialogsProps = {
   isIncomplete: boolean;
   missingFieldLabels: string[];
   ataxiaIncompleteLabel: string | null;
-  undecidedStrokeLyse: string[];
   lyseJaWithKeinStroke: boolean;
   canNormalizeMissing: boolean;
   onAfterSelect: (field: ClickableField, value: string) => void;
@@ -72,7 +71,6 @@ export default function ErhebungExamDialogs({
   isIncomplete,
   missingFieldLabels,
   ataxiaIncompleteLabel,
-  undecidedStrokeLyse,
   lyseJaWithKeinStroke,
   canNormalizeMissing,
   onAfterSelect,
@@ -140,7 +138,6 @@ export default function ErhebungExamDialogs({
               isIncomplete,
               missingFieldLabels,
               ataxiaIncompleteLabel,
-              undecidedStrokeLyse,
               lyseJaWithKeinStroke,
               longerThan60Minutes: false,
               needsCloseAnyway: true,

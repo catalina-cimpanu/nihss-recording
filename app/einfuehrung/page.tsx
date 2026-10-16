@@ -37,8 +37,9 @@ export default function EinfuehrungPage() {
             Begleitumstände einschließlich Kontraindikationen.
           </li>
           <li>
-            Vor dem Beenden wird zuerst auf fehlende NIHSS-Felder hingewiesen,
-            falls nötig. Danach erscheint das Fenster zur hypothetischen
+            Vor dem Beenden wird auf fehlende NIHSS-Felder hingewiesen, falls
+            nötig. Eine offene Stroke- oder Lyse-Entscheidung hält den
+            Abschluss nicht auf. Danach erscheint das Fenster zur hypothetischen
             Stroke-/Lyse-Entscheidung: bitte Stroke und Lyse noch einmal{" "}
             <strong className="underline">nach</strong> vollständiger
             NIHSS-Erhebung angeben — ebenfalls hypothetisch, nur anhand des

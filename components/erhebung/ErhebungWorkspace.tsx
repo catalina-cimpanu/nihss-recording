@@ -49,7 +49,6 @@ import {
   getAtaxiaIncompleteLabel,
   getDocumentationWarnings,
   getMissingNihssFields,
-  getUndecidedStrokeLyseLabels,
   hasAtaxiaScoreWithoutLimbFinding,
   hasInvalidAtaxiaLimbCount,
   hasLyseJaWithKeinStroke,
@@ -117,11 +116,9 @@ export default function ErhebungWorkspace({
   const isIncomplete = missingFields.length > 0 || invalidAtaxiaLimbs;
   const incompleteCount =
     missingFields.length + (invalidAtaxiaLimbs ? 1 : 0);
-  const undecidedStrokeLyse = getUndecidedStrokeLyseLabels(erhebung);
   const lyseJaWithKeinStroke = hasLyseJaWithKeinStroke(erhebung);
   const needsIncompleteWarning = isIncomplete;
-  const needsDecisionWarning =
-    undecidedStrokeLyse.length > 0 || lyseJaWithKeinStroke;
+  const needsDecisionWarning = lyseJaWithKeinStroke;
   const documentationWarnings = useMemo(
     () => getDocumentationWarnings(erhebung, now),
     [erhebung, now],
@@ -452,16 +449,14 @@ export default function ErhebungWorkspace({
       missingFields,
       now: new Date(),
     });
-    await persist(result.erhebung, result.ereignisse);
-
     const stillNeedsWarning =
       getMissingNihssFields(result.erhebung).length > 0 ||
       hasInvalidAtaxiaLimbCount(result.erhebung) ||
-      getUndecidedStrokeLyseLabels(result.erhebung).length > 0 ||
       hasLyseJaWithKeinStroke(result.erhebung);
     if (!stillNeedsWarning) {
       proceedToAfterCompletion();
     }
+    await persist(result.erhebung, result.ereignisse);
   }
 
   const fieldMap = useMemo(() => {
@@ -566,7 +561,6 @@ export default function ErhebungWorkspace({
           isIncomplete={isIncomplete}
           missingFieldLabels={missingFields.map((field) => field.label)}
           ataxiaIncompleteLabel={ataxiaIncompleteLabel}
-          undecidedStrokeLyse={undecidedStrokeLyse}
           lyseJaWithKeinStroke={lyseJaWithKeinStroke}
           canNormalizeMissing={canNormalizeMissing}
           onAfterSelect={handleAfterCompletionSelect}
