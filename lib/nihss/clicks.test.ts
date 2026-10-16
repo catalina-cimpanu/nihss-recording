@@ -9,6 +9,7 @@ import {
   applyLifecycleEvent,
   applyStrokeLyseSimultaneous,
   applyLyseReset,
+  shouldPromptLyseWithoutStroke,
 } from "@/lib/nihss/clicks";
 
 function row(overrides: Partial<ErhebungRow> = {}): ErhebungRow {
@@ -177,6 +178,39 @@ describe("applyErhebungClose", () => {
 
     const again = applyErhebungClose({ erhebung: closed.erhebung, now });
     assert.equal(again.ereignisse.length, 0);
+  });
+});
+
+describe("shouldPromptLyseWithoutStroke", () => {
+  it("prompts only when Lyse ja is chosen and Stroke is not Ja", () => {
+    assert.equal(
+      shouldPromptLyseWithoutStroke({
+        lyse_status: "Ja",
+        stroke_status: "nicht entschieden",
+      }),
+      true,
+    );
+    assert.equal(
+      shouldPromptLyseWithoutStroke({
+        lyse_status: "Ja",
+        stroke_status: "Kein Stroke",
+      }),
+      true,
+    );
+    assert.equal(
+      shouldPromptLyseWithoutStroke({
+        lyse_status: "Ja",
+        stroke_status: "Ja",
+      }),
+      false,
+    );
+    assert.equal(
+      shouldPromptLyseWithoutStroke({
+        lyse_status: "Keine Lyse",
+        stroke_status: "nicht entschieden",
+      }),
+      false,
+    );
   });
 });
 

@@ -338,30 +338,6 @@ export default function FollowupFields({
       {mode === "post" ? (
         <>
           <QuestionFrame
-            title="Wurde/wird im endgültigen TEMPiS-Konsil eine Schlaganfall-Verdachtsdiagnose gestellt?"
-            filled={values.tempis_stroke_verdacht != null}
-          >
-            <JaNeinOptions
-              name="TEMPiS Stroke-Verdacht"
-              value={values.tempis_stroke_verdacht}
-              disabled={disabled}
-              onSelect={(value) => onChange({ tempis_stroke_verdacht: value })}
-            />
-          </QuestionFrame>
-
-          <QuestionFrame
-            title="Wurde/wird im endgültigen TEMPiS-Konsil eine Lyse-Empfehlung ausgesprochen?"
-            filled={values.tempis_lyse_empfehlung != null}
-          >
-            <JaNeinOptions
-              name="TEMPiS Lyse-Empfehlung"
-              value={values.tempis_lyse_empfehlung}
-              disabled={disabled}
-              onSelect={(value) => onChange({ tempis_lyse_empfehlung: value })}
-            />
-          </QuestionFrame>
-
-          <QuestionFrame
             title="Sind während oder nach der Untersuchung weitere(n) Lyse-Kontraindikation(en) bekannt geworden?"
             filled={nachKiAnswer(values) != null}
           >
@@ -466,6 +442,30 @@ export default function FollowupFields({
                 })}
               </>
             ) : null}
+          </QuestionFrame>
+
+          <QuestionFrame
+            title="Wurde/wird im endgültigen TEMPiS-Konsil eine Schlaganfall-Verdachtsdiagnose gestellt?"
+            filled={values.tempis_stroke_verdacht != null}
+          >
+            <JaNeinOptions
+              name="TEMPiS Stroke-Verdacht"
+              value={values.tempis_stroke_verdacht}
+              disabled={disabled}
+              onSelect={(value) => onChange({ tempis_stroke_verdacht: value })}
+            />
+          </QuestionFrame>
+
+          <QuestionFrame
+            title="Wurde/wird im endgültigen TEMPiS-Konsil eine Lyse-Empfehlung ausgesprochen?"
+            filled={values.tempis_lyse_empfehlung != null}
+          >
+            <JaNeinOptions
+              name="TEMPiS Lyse-Empfehlung"
+              value={values.tempis_lyse_empfehlung}
+              disabled={disabled}
+              onSelect={(value) => onChange({ tempis_lyse_empfehlung: value })}
+            />
           </QuestionFrame>
 
           <QuestionFrame

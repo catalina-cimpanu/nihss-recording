@@ -282,6 +282,15 @@ export function applyAfterCompletionClick(args: {
   };
 }
 
+export function shouldPromptLyseWithoutStroke(
+  row: Pick<ErhebungRow, "stroke_status" | "lyse_status">,
+): boolean {
+  return (
+    row.lyse_status === "Ja" &&
+    (row.stroke_status === "nicht entschieden" || row.stroke_status === "Kein Stroke")
+  );
+}
+
 export function applyStrokeLyseSimultaneous(args: {
   erhebung: ErhebungRow;
   now: Date;

@@ -55,9 +55,9 @@ export default function EinfuehrungPage() {
             Konsilangaben gesperrt.
           </li>
           <li>
-            Wird Lyse vor Stroke dokumentiert, muss gewählt werden: verklickt
-            (Lyse zurücksetzen) oder beide gleichzeitig (Stroke → Lyse als 0
-            Sek.).
+            Wird Lyse ja gewählt, solange Stroke nicht Ja ist, erscheint eine
+            Rückfrage: Stroke ebenfalls auf Ja setzen, oder die Lyse-Auswahl
+            zurücknehmen.
           </li>
           <li>
             Bei Kontraindikationen nach der Untersuchung kann{" "}

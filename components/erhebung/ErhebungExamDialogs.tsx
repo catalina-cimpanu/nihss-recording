@@ -58,7 +58,7 @@ type ErhebungExamDialogsProps = {
   onNormalizeMissing: () => void;
   onCancelExamFlow: () => void;
   onLyseReset: () => void;
-  onLyseSimultaneous: () => void;
+  onAlsoStrokeJa: () => void;
   onConfirmExamClose: () => void;
   onConfirmErhebungClose: () => void;
   onCancelErhebungConfirm: () => void;
@@ -85,7 +85,7 @@ export default function ErhebungExamDialogs({
   onNormalizeMissing,
   onCancelExamFlow,
   onLyseReset,
-  onLyseSimultaneous,
+  onAlsoStrokeJa,
   onConfirmExamClose,
   onConfirmErhebungClose,
   onCancelErhebungConfirm,
@@ -176,31 +176,24 @@ export default function ErhebungExamDialogs({
       ) : null}
 
       {closeFlow.lyseOrder ? (
-        <AppDialog label="Lyse vor Stroke" dismissible={false}>
+        <AppDialog label="Lyse ohne Stroke ja" dismissible={false}>
           <p className="text-sm">
-            Lyse wurde vor Stroke dokumentiert. Bitte wählen, wie damit
-            umgegangen werden soll.
+            Lyse ja wurde gewählt, obwohl Stroke noch nicht auf Ja steht.
           </p>
           <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={onAlsoStrokeJa}
+              className="rounded-lg bg-tempis-blue-dark px-4 py-2 text-left font-semibold text-white hover:bg-tempis-blue-darker"
+            >
+              Auch Stroke - ja auswählen?
+            </button>
             <button
               type="button"
               onClick={onLyseReset}
               className="rounded-lg border border-border px-4 py-2 text-left font-semibold"
             >
-              Ich habe mich verklickt
-              <span className="mt-0.5 block text-xs font-medium text-muted">
-                Lyse-Auswahl zurücksetzen
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={onLyseSimultaneous}
-              className="rounded-lg bg-tempis-blue-dark px-4 py-2 text-left font-semibold text-white hover:bg-tempis-blue-darker"
-            >
-              Ich habe beide gleichzeitig entschieden
-              <span className="mt-0.5 block text-xs font-medium text-white/80">
-                Stroke → Lyse als 0 Sek. speichern
-              </span>
+              Lyse-ja versehentlich ausgewählt
             </button>
           </div>
         </AppDialog>

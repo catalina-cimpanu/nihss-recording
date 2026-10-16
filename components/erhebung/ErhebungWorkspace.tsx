@@ -28,13 +28,12 @@ import {
   applyFieldClick,
   applyLifecycleEvent,
   applyMissingFieldsAsNormal,
-  applyStrokeLyseSimultaneous,
   applyLyseReset,
+  shouldPromptLyseWithoutStroke,
 } from "@/lib/nihss/clicks";
 import {
   AUTO_CLOSE_AFTER_MS,
   autoCloseStopAt,
-  isLyseBeforeStroke,
   shouldAutoCloseExam,
 } from "@/lib/nihss/duration";
 import {
@@ -264,24 +263,23 @@ export default function ErhebungWorkspace({
       now: new Date(),
     });
     await persist(result.erhebung, result.ereignisse);
-    if (
-      (field.key === "stroke" || field.key === "lyse") &&
-      isLyseBeforeStroke(result.erhebung) &&
-      !result.erhebung.stroke_lyse_gleichzeitig
-    ) {
+    if (field.key === "lyse" && shouldPromptLyseWithoutStroke(result.erhebung)) {
       dispatchCloseFlow({ type: "lyse-order-open" });
     }
   }
 
-  async function confirmStrokeLyseSimultaneous() {
-    const result = applyStrokeLyseSimultaneous({
-      erhebung: erhebungRef.current,
-      now: new Date(),
-    });
+  async function confirmAlsoStrokeJa() {
+    const option = findOption(STROKE_FIELD, "Ja");
     dispatchCloseFlow({ type: "lyse-order-close" });
-    if (result.ereignisse.length === 0) {
+    if (!option) {
       return;
     }
+    const result = applyFieldClick({
+      erhebung: erhebungRef.current,
+      field: STROKE_FIELD,
+      option,
+      now: new Date(),
+    });
     await persist(result.erhebung, result.ereignisse);
   }
 
@@ -589,8 +587,8 @@ export default function ErhebungWorkspace({
           onLyseReset={() => {
             void confirmLyseReset();
           }}
-          onLyseSimultaneous={() => {
-            void confirmStrokeLyseSimultaneous();
+          onAlsoStrokeJa={() => {
+            void confirmAlsoStrokeJa();
           }}
           onConfirmExamClose={() => {
             void confirmStop();
