@@ -100,6 +100,16 @@ export type ErhebungRow = {
   lyse_ki_endokarditis_vor: boolean;
   lyse_ki_sonstige_vor: boolean;
   lyse_ki_keine: boolean;
+  symptom_schwindel: boolean;
+  symptom_schwindel_vor: boolean;
+  symptom_kopfschmerzen: boolean;
+  symptom_kopfschmerzen_vor: boolean;
+  symptom_asymptomatisch: boolean;
+  symptom_asymptomatisch_vor: boolean;
+  symptom_sonstiges: boolean;
+  symptom_sonstiges_vor: boolean;
+  symptom_sonstiges_text: string | null;
+  symptom_sonstiges_text_vor: string | null;
   umstaende_kooperation: boolean;
   umstaende_kooperation_text: string | null;
   umstaende_sprachbarriere: boolean;

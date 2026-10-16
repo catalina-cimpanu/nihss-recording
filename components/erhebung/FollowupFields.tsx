@@ -15,6 +15,7 @@ import {
   hasNachKi,
   kontraindikationFields,
   nachKiAnswer,
+  SYMPTOME,
   umstaendeAnswer,
   type FollowupValues,
   type JaNein,
@@ -277,6 +278,62 @@ export default function FollowupFields({
           ) : null}
         </QuestionFrame>
       ) : null}
+
+      <QuestionFrame
+        title="Trifft eine der folgenden Situationen zu?"
+        filled={SYMPTOME.some(
+          (item) => Boolean(values[item.flag]) || Boolean(values[item.selectedBefore]),
+        )}
+      >
+        {/* <p className="text-xs text-muted">(Mehrfachauswahl möglich)</p> */}
+        {SYMPTOME.map((item) => {
+          const checked = Boolean(values[item.flag]);
+          const selectedBefore = Boolean(values[item.selectedBefore]);
+          return (
+            <div key={item.flag} className="space-y-2">
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={checked}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    onChange({
+                      [item.flag]: event.target.checked,
+                    } as Partial<ErhebungRow>)
+                  }
+                />
+                <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                  {item.label}
+                  {mode === "post" && selectedBefore ? (
+                    <TimingBadge timing={KI_TIMING_VOR} />
+                  ) : null}
+                  {mode === "post" && checked && !selectedBefore ? (
+                    <TimingBadge timing={KI_TIMING_NACH} />
+                  ) : null}
+                </span>
+              </label>
+              {item.text && checked ? (
+                <ShortText
+                  id={item.text}
+                  label="Bitte spezifizieren"
+                  value={
+                    typeof values[item.text] === "string" ? values[item.text] : null
+                  }
+                  disabled={disabled}
+                  onChange={(value) => {
+                    const textKey = item.text;
+                    if (!textKey) {
+                      return;
+                    }
+                    onChange({ [textKey]: value } as Partial<ErhebungRow>);
+                  }}
+                />
+              ) : null}
+            </div>
+          );
+        })}
+      </QuestionFrame>
 
       {mode === "post" ? (
         <>

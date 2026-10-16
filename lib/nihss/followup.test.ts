@@ -270,6 +270,54 @@ describe("applyFollowupPatch", () => {
     assert.equal(onlyAfter.lyse_ki_zeitfenster, true);
   });
 
+  it("keeps the before-exam symptom after it is changed later", () => {
+    const saved = applyFollowupPatch(
+      row(),
+      preExamFollowupPatch({
+        ...emptyFollowupValues(),
+        symptom_schwindel: true,
+      }),
+    );
+    assert.equal(saved.symptom_schwindel, true);
+    assert.equal(saved.symptom_schwindel_vor, true);
+    assert.equal(saved.symptom_kopfschmerzen_vor, false);
+
+    const after = applyFollowupPatch(saved, { symptom_schwindel: false });
+    assert.equal(after.symptom_schwindel, false);
+    assert.equal(after.symptom_schwindel_vor, true);
+
+    const addedLater = applyFollowupPatch(saved, { symptom_asymptomatisch: true });
+    assert.equal(addedLater.symptom_asymptomatisch, true);
+    assert.equal(addedLater.symptom_asymptomatisch_vor, false);
+  });
+
+  it("keeps the before-exam Sonstiges text after the current text changes", () => {
+    const saved = applyFollowupPatch(
+      row(),
+      preExamFollowupPatch({
+        ...emptyFollowupValues(),
+        symptom_sonstiges: true,
+        symptom_sonstiges_text: "Übelkeit",
+      }),
+    );
+    assert.equal(saved.symptom_sonstiges, true);
+    assert.equal(saved.symptom_sonstiges_vor, true);
+    assert.equal(saved.symptom_sonstiges_text, "Übelkeit");
+    assert.equal(saved.symptom_sonstiges_text_vor, "Übelkeit");
+
+    const edited = applyFollowupPatch(saved, {
+      symptom_sonstiges_text: "Schwindelgefühl",
+    });
+    assert.equal(edited.symptom_sonstiges_text, "Schwindelgefühl");
+    assert.equal(edited.symptom_sonstiges_text_vor, "Übelkeit");
+
+    const cleared = applyFollowupPatch(edited, { symptom_sonstiges: false });
+    assert.equal(cleared.symptom_sonstiges, false);
+    assert.equal(cleared.symptom_sonstiges_text, null);
+    assert.equal(cleared.symptom_sonstiges_vor, true);
+    assert.equal(cleared.symptom_sonstiges_text_vor, "Übelkeit");
+  });
+
   it("clears hidden vor ticks when Nein is chosen before Weiter", () => {
     const hidden = preExamFollowupPatch({
       ...emptyFollowupValues(),

@@ -12,6 +12,53 @@ export const JA_NEIN_OPTIONS: NihssOption[] = [
 
 export type JaNein = "Ja" | "Nein";
 
+export const SYMPTOM_KEYS = [
+  "schwindel",
+  "kopfschmerzen",
+  "asymptomatisch",
+  "sonstiges",
+] as const;
+
+export type SymptomKey = (typeof SYMPTOM_KEYS)[number];
+export type SymptomFlagName = `symptom_${SymptomKey}`;
+export type SymptomVorName = `symptom_${SymptomKey}_vor`;
+
+export const SYMPTOME: {
+  key: SymptomKey;
+  flag: SymptomFlagName;
+  selectedBefore: SymptomVorName;
+  label: string;
+  text?: "symptom_sonstiges_text";
+  textBefore?: "symptom_sonstiges_text_vor";
+}[] = [
+  {
+    key: "schwindel",
+    flag: "symptom_schwindel",
+    selectedBefore: "symptom_schwindel_vor",
+    label: "Isolierter Schwindel",
+  },
+  {
+    key: "kopfschmerzen",
+    flag: "symptom_kopfschmerzen",
+    selectedBefore: "symptom_kopfschmerzen_vor",
+    label: "Isolierte Kopfschmerzen",
+  },
+  {
+    key: "asymptomatisch",
+    flag: "symptom_asymptomatisch",
+    selectedBefore: "symptom_asymptomatisch_vor",
+    label: "Pat. (wieder) asymptomatisch",
+  },
+  {
+    key: "sonstiges",
+    flag: "symptom_sonstiges",
+    selectedBefore: "symptom_sonstiges_vor",
+    text: "symptom_sonstiges_text",
+    textBefore: "symptom_sonstiges_text_vor",
+    label: "Sonstiges",
+  },
+];
+
 export const UMSTAENDE_KEYS = [
   "kooperation",
   "sprachbarriere",
@@ -183,6 +230,10 @@ export type FollowupValues = Pick<
   | KiVorName
   | KiTextName
   | "lyse_ki_keine"
+  | SymptomFlagName
+  | SymptomVorName
+  | "symptom_sonstiges_text"
+  | "symptom_sonstiges_text_vor"
   | "umstaende_kooperation"
   | "umstaende_kooperation_text"
   | "umstaende_sprachbarriere"
@@ -210,6 +261,16 @@ export function emptyFollowupValues(): FollowupValues {
     lyse_kontraindikation_beeinflusst_text: null,
     ...emptyKiColumns(),
     lyse_ki_keine: false,
+    symptom_schwindel: false,
+    symptom_schwindel_vor: false,
+    symptom_kopfschmerzen: false,
+    symptom_kopfschmerzen_vor: false,
+    symptom_asymptomatisch: false,
+    symptom_asymptomatisch_vor: false,
+    symptom_sonstiges: false,
+    symptom_sonstiges_vor: false,
+    symptom_sonstiges_text: null,
+    symptom_sonstiges_text_vor: null,
     umstaende_kooperation: false,
     umstaende_kooperation_text: null,
     umstaende_sprachbarriere: false,
@@ -471,6 +532,31 @@ export function applyFollowupPatch(
     next.sonstige_anmerkungen = clipShortText(next.sonstige_anmerkungen) || null;
   }
 
+  for (const item of SYMPTOME) {
+    if (item.selectedBefore in patch) {
+      Object.assign(next, {
+        [item.selectedBefore]:
+          Boolean(erhebung[item.selectedBefore]) || Boolean(patch[item.selectedBefore]),
+      });
+    }
+    if (!item.text || !item.textBefore) {
+      continue;
+    }
+    if (!next[item.flag]) {
+      next[item.text] = null;
+    } else if (typeof next[item.text] === "string") {
+      next[item.text] = clipShortText(next[item.text]) || null;
+    }
+    if (item.textBefore in patch) {
+      const previousText = erhebung[item.textBefore];
+      const incoming =
+        typeof patch[item.textBefore] === "string"
+          ? clipShortText(patch[item.textBefore]) || null
+          : null;
+      next[item.textBefore] = previousText || incoming;
+    }
+  }
+
   return next;
 }
 
@@ -492,6 +578,15 @@ export function followupEreignisseFromPatch(
     if (value !== previous[field.key] && (value === "Ja" || value === "Nein")) {
       events.push(followupEreignis(next, field.key, field.label, value));
     }
+  }
+
+  for (const item of SYMPTOME) {
+    if (!(item.flag in patch) || next[item.flag] === previous[item.flag]) {
+      continue;
+    }
+    events.push(
+      followupEreignis(next, item.flag, item.label, next[item.flag] ? "Ja" : "Nein"),
+    );
   }
 
   for (const item of UMSTAENDE) {
@@ -635,6 +730,24 @@ export function preExamFollowupPatch(
     lyse_kontraindikation_vor_untersuchung:
       values.lyse_kontraindikation_vor_untersuchung,
   };
+
+  for (const item of SYMPTOME) {
+    const selected = Boolean(values[item.flag]);
+    Object.assign(patch, {
+      [item.flag]: selected,
+      [item.selectedBefore]: selected,
+    });
+    if (!item.text || !item.textBefore) {
+      continue;
+    }
+    const text = values[item.text];
+    const clipped =
+      selected && typeof text === "string" ? clipShortText(text) || null : null;
+    Object.assign(patch, {
+      [item.text]: clipped,
+      [item.textBefore]: clipped,
+    });
+  }
 
   const vorJa = values.lyse_kontraindikation_vor_untersuchung === "Ja";
   for (const item of kontraindikationFields()) {
