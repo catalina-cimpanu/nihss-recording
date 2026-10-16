@@ -5,6 +5,7 @@ import { getFieldByKey, LYSE_FIELD, STROKE_FIELD } from "@/lib/nihss/config";
 import {
   applyAfterCompletionClick,
   applyErhebungClose,
+  applyKonsilCorrection,
   applyFieldClick,
   applyLifecycleEvent,
   applyStrokeLyseSimultaneous,
@@ -177,6 +178,25 @@ describe("applyErhebungClose", () => {
     assert.equal(closed.ereignisse[0]?.feld_key, "erhebung_close");
 
     const again = applyErhebungClose({ erhebung: closed.erhebung, now });
+    assert.equal(again.ereignisse.length, 0);
+  });
+});
+
+describe("applyKonsilCorrection", () => {
+  it("reopens a closed Konsil without changing the Untersuchung", () => {
+    const now = new Date("2026-08-27T12:00:00.000Z");
+    const closed = row({
+      untersuchung_status: "abgeschlossen",
+      followup_status: "abgeschlossen",
+      followup_abgeschlossen_at: "2026-08-27T11:00:00.000Z",
+    });
+    const opened = applyKonsilCorrection({ erhebung: closed, now });
+    assert.equal(opened.erhebung.followup_status, "offen");
+    assert.equal(opened.erhebung.followup_abgeschlossen_at, null);
+    assert.equal(opened.erhebung.untersuchung_status, "abgeschlossen");
+    assert.equal(opened.ereignisse[0]?.feld_key, "konsil_korrektur");
+
+    const again = applyKonsilCorrection({ erhebung: opened.erhebung, now });
     assert.equal(again.ereignisse.length, 0);
   });
 });

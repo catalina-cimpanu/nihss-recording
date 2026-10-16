@@ -25,6 +25,7 @@ import {
 import {
   applyAfterCompletionClick,
   applyErhebungClose,
+  applyKonsilCorrection,
   applyFieldClick,
   applyLifecycleEvent,
   applyMissingFieldsAsNormal,
@@ -430,6 +431,17 @@ export default function ErhebungWorkspace({
     proceedToFollowup();
   }
 
+  async function correctKonsil() {
+    const result = applyKonsilCorrection({
+      erhebung: erhebungRef.current,
+      now: new Date(),
+    });
+    if (result.ereignisse.length === 0) {
+      return;
+    }
+    await persist(result.erhebung, result.ereignisse);
+  }
+
   async function confirmErhebungClose() {
     if (erhebungRef.current.followup_status === "abgeschlossen") {
       dispatchCloseFlow({ type: "erhebung-closed" });
@@ -490,7 +502,7 @@ export default function ErhebungWorkspace({
             Die Untersuchung ist abgeschlossen und die NIHSS-Angaben sind nur
             noch lesbar.
             {followupClosed
-              ? " Die Erhebung ist abgeschlossen. Angaben zum Konsil sind nicht mehr änderbar."
+              ? " Die Erhebung ist abgeschlossen. Angaben zum Konsil können nachträglich korrigiert werden."
               : " Angaben zum Konsil können weiter bearbeitet werden."}
           </p>
         ) : null}
@@ -609,7 +621,7 @@ export default function ErhebungWorkspace({
             <section className="space-y-3 rounded-xl border border-border bg-surface p-3">
               <p className="text-sm text-muted">
                 {followupClosed
-                  ? "Die Erhebung ist abgeschlossen. Diese Angaben sind nicht mehr änderbar."
+                  ? "Die Erhebung ist abgeschlossen. Die NIHSS-Angaben bleiben gesperrt."
                   : "Diese Angaben können nach Beenden der Untersuchung noch geändert werden."}
               </p>
               <FollowupFields
@@ -620,7 +632,17 @@ export default function ErhebungWorkspace({
                 disabled={followupClosed}
                 onChange={handleFollowupChange}
               />
-              {!followupClosed ? (
+              {followupClosed ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void correctKonsil();
+                  }}
+                  className="rounded-lg border border-border px-4 py-3 font-semibold"
+                >
+                  Angaben zum Konsil nachträglich korrigieren
+                </button>
+              ) : (
                 <button
                   type="button"
                   onClick={() =>
@@ -630,7 +652,7 @@ export default function ErhebungWorkspace({
                 >
                   Erhebung abschließen
                 </button>
-              ) : null}
+              )}
             </section>
           </>
         ) : null}

@@ -58,14 +58,14 @@ export default function FollowupDialog({
           onClick={onSave}
           className="rounded-lg border border-border px-4 py-2 font-semibold"
         >
-          Nur speichern
+          Speichern
         </button>
         <button
           type="button"
           onClick={onCloseErhebung}
           className="rounded-lg bg-tempis-signal px-4 py-3 font-semibold text-white"
         >
-          Erhebung speichern und abschließen
+          Abschließen
         </button>
       </div>
     </AppDialog>

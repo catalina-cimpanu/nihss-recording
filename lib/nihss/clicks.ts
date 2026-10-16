@@ -434,3 +434,41 @@ export function applyErhebungClose(args: {
     ],
   };
 }
+
+export function applyKonsilCorrection(args: {
+  erhebung: ErhebungRow;
+  now: Date;
+}): { erhebung: ErhebungRow; ereignisse: EreignisInsert[] } {
+  const current = args.erhebung;
+  if (
+    current.untersuchung_status !== "abgeschlossen" ||
+    current.followup_status !== "abgeschlossen"
+  ) {
+    return { erhebung: current, ereignisse: [] };
+  }
+
+  const label = "Angaben zum Konsil zur Korrektur geöffnet";
+  const next: ErhebungRow = {
+    ...current,
+    followup_status: "offen",
+    followup_abgeschlossen_at: null,
+    timeline: appendTimelineLine(
+      current.timeline,
+      formatTimelineLine(args.now, "Erhebung", label),
+    ),
+  };
+
+  return {
+    erhebung: next,
+    ereignisse: [
+      {
+        erhebung_id: next.id,
+        feld_key: "konsil_korrektur",
+        feld_label: "Erhebung",
+        wert_label: label,
+        wert_score: null,
+        ereignis_typ: "lifecycle",
+      },
+    ],
+  };
+}

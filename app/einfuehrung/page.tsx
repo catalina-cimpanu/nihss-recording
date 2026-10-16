@@ -50,10 +50,12 @@ export default function EinfuehrungPage() {
           </li>
           <li>
             Anschließend erscheinen die Angaben zum Konsil. Mit{" "}
-            <strong>Nur speichern</strong> bleiben sie auf der Erhebungsseite
-            änderbar. Mit <strong>Erhebung speichern und abschließen</strong>{" "}
-            (oder dem gleichnamigen Button auf der Seite) werden die
-            Konsilangaben gesperrt.
+            <strong>Speichern</strong> bleiben sie auf der Erhebungsseite
+            änderbar. Mit <strong>Abschließen</strong> im Fenster, oder mit{" "}
+            <strong>Erhebung abschließen</strong> auf der Seite, werden die
+            Konsilangaben gesperrt. Mit{" "}
+            <strong>Angaben zum Konsil nachträglich korrigieren</strong> lassen
+            sie sich wieder ändern. Die NIHSS-Angaben bleiben gesperrt.
           </li>
           <li>
             Wird Lyse ja gewählt, solange Stroke nicht Ja ist, erscheint eine
@@ -114,9 +116,11 @@ export default function EinfuehrungPage() {
             können Sie bei Kontraindikationen <strong>Nein</strong> wählen,
             wenn nichts Weiteres bekannt geworden ist, oder <strong>Ja</strong>
             , um die Gründe auszuwählen.{" "}
-            <strong>Nur speichern</strong> lässt die Felder auf der
-            Erhebungsseite änderbar.{" "}
-            <strong>Erhebung speichern und abschließen</strong> sperrt sie.
+            <strong>Speichern</strong> lässt die Felder auf der
+            Erhebungsseite änderbar. <strong>Abschließen</strong> sperrt sie.
+            Danach öffnet{" "}
+            <strong>Angaben zum Konsil nachträglich korrigieren</strong> die
+            Felder wieder. Die NIHSS-Angaben bleiben gesperrt.
           </li>
           <li>
             <strong>Liste, Dashboard, CSV.</strong> Unter Erhebungen finden und
