@@ -11,8 +11,11 @@ import {
   digitsOnly,
   isLyseKiVorMissing,
   isRetractedKi,
+  anmerkungenAnswer,
   hasNachKi,
   kontraindikationFields,
+  nachKiAnswer,
+  umstaendeAnswer,
   type FollowupValues,
   type JaNein,
   type KiTiming,
@@ -115,20 +118,6 @@ function KontraindikationReasons({
           möglich.
         </p>
       ) : null}
-      {mode === "post" ? (
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => onChange({ lyse_ki_keine: !values.lyse_ki_keine })}
-          className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-            values.lyse_ki_keine
-              ? "bg-tempis-sage-dark text-white"
-              : "border border-border"
-          }`}
-        >
-          Keine
-        </button>
-      ) : null}
       <p className="text-xs text-muted">Welche? Mehrfachauswahl möglich</p>
       {kontraindikationFields().map((item) => {
         const checked = Boolean(values[item.flag]);
@@ -145,7 +134,7 @@ function KontraindikationReasons({
                 type="checkbox"
                 className="mt-1"
                 checked={checked}
-                disabled={disabled || lockedVor || values.lyse_ki_keine}
+                disabled={disabled || lockedVor}
                 onChange={(event) => {
                   const nextChecked = event.target.checked;
                   onChange({
@@ -317,14 +306,24 @@ export default function FollowupFields({
 
           <QuestionFrame
             title="Sind während oder nach der Untersuchung weitere(n) Lyse-Kontraindikation(en) bekannt geworden?"
-            filled={hasNachKi(values) || Boolean(values.lyse_ki_keine)}
+            filled={nachKiAnswer(values) != null}
           >
-            <KontraindikationReasons
-              values={values}
+            <JaNeinOptions
+              name="Lyse-Kontraindikation nach Untersuchung"
+              value={nachKiAnswer(values)}
               disabled={disabled}
-              mode="post"
-              onChange={onChange}
+              onSelect={(value) =>
+                onChange({ lyse_kontraindikation_nach_untersuchung: value })
+              }
             />
+            {nachKiAnswer(values) === "Ja" ? (
+              <KontraindikationReasons
+                values={values}
+                disabled={disabled}
+                mode="post"
+                onChange={onChange}
+              />
+            ) : null}
           </QuestionFrame>
 
           {hasNachKi(values) ? (
@@ -360,93 +359,79 @@ export default function FollowupFields({
 
           <QuestionFrame
             title="Bestanden irgendwelche Umstände, die die Untersuchung erschwert haben?"
-            filled={
-              values.umstaende_keine ||
-              UMSTAENDE.some((item) => Boolean(values[item.flag]))
-            }
+            filled={umstaendeAnswer(values) != null}
           >
-            <button
-              type="button"
+            <JaNeinOptions
+              name="Umstände der Untersuchung"
+              value={umstaendeAnswer(values)}
               disabled={disabled}
-              onClick={() =>
-                onChange({ umstaende_keine: !values.umstaende_keine })
-              }
-              className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-                values.umstaende_keine
-                  ? "bg-tempis-sage-dark text-white"
-                  : "border border-border"
-              }`}
-            >
-              Keine
-            </button>
-            <p className="text-xs text-muted">Mehrfachauswahl möglich</p>
-            {UMSTAENDE.map((item) => {
-              const checked = Boolean(values[item.flag]);
-              return (
-                <div key={item.key} className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={disabled || values.umstaende_keine}
-                      onChange={(event) =>
-                        onChange({
-                          [item.flag]: event.target.checked,
-                        } as Partial<ErhebungRow>)
-                      }
-                    />
-                    {item.label}
-                  </label>
-                  {checked ? (
-                    <ShortText
-                      id={`umstand-${item.key}`}
-                      label="Bitte spezifizieren"
-                      value={
-                        typeof values[item.text] === "string"
-                          ? (values[item.text] as string)
-                          : null
-                      }
-                      disabled={disabled || values.umstaende_keine}
-                      onChange={(value) =>
-                        onChange({ [item.text]: value } as Partial<ErhebungRow>)
-                      }
-                    />
-                  ) : null}
-                </div>
-              );
-            })}
+              onSelect={(value) => onChange({ umstaende_erschwert: value })}
+            />
+            {umstaendeAnswer(values) === "Ja" ? (
+              <>
+                <p className="text-xs text-muted">Mehrfachauswahl möglich</p>
+                {UMSTAENDE.map((item) => {
+                  const checked = Boolean(values[item.flag]);
+                  return (
+                    <div key={item.key} className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={disabled}
+                          onChange={(event) =>
+                            onChange({
+                              [item.flag]: event.target.checked,
+                            } as Partial<ErhebungRow>)
+                          }
+                        />
+                        {item.label}
+                      </label>
+                      {checked ? (
+                        <ShortText
+                          id={`umstand-${item.key}`}
+                          label="Bitte spezifizieren"
+                          value={
+                            typeof values[item.text] === "string"
+                              ? (values[item.text] as string)
+                              : null
+                          }
+                          disabled={disabled}
+                          onChange={(value) =>
+                            onChange({
+                              [item.text]: value,
+                            } as Partial<ErhebungRow>)
+                          }
+                        />
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </>
+            ) : null}
           </QuestionFrame>
 
           <QuestionFrame
             title="Sonstige Anmerkungen"
-            filled={
-              values.sonstige_anmerkungen_keine ||
-              Boolean(values.sonstige_anmerkungen)
-            }
+            filled={anmerkungenAnswer(values) != null}
           >
-            <button
-              type="button"
+            <JaNeinOptions
+              name="Sonstige Anmerkungen"
+              value={anmerkungenAnswer(values)}
               disabled={disabled}
-              onClick={() =>
-                onChange({
-                  sonstige_anmerkungen_keine: !values.sonstige_anmerkungen_keine,
-                })
+              onSelect={(value) =>
+                onChange({ sonstige_anmerkungen_vorhanden: value })
               }
-              className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-                values.sonstige_anmerkungen_keine
-                  ? "bg-tempis-sage-dark text-white"
-                  : "border border-border"
-              }`}
-            >
-              Keine
-            </button>
-            <ShortText
-              id="anmerkungen"
-              label="Oder kurze Anmerkung"
-              value={values.sonstige_anmerkungen}
-              disabled={disabled || values.sonstige_anmerkungen_keine}
-              onChange={(value) => onChange({ sonstige_anmerkungen: value })}
             />
+            {anmerkungenAnswer(values) === "Ja" ? (
+              <ShortText
+                id="anmerkungen"
+                label="Kurze Anmerkung"
+                value={values.sonstige_anmerkungen}
+                disabled={disabled}
+                onChange={(value) => onChange({ sonstige_anmerkungen: value })}
+              />
+            ) : null}
           </QuestionFrame>
         </>
       ) : null}

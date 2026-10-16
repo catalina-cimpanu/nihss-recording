@@ -33,6 +33,19 @@
   text-align: center;
 }
 
+.optionRowNowrap {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+}
+
+.optionRowNowrap .optionButton {
+  width: auto;
+  min-height: 2.75rem;
+  flex: 1 1 0;
+  text-align: center;
+}
+
 .optionRowGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;

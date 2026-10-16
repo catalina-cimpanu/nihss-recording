@@ -67,10 +67,18 @@ export default function ErhebungNihssForm({
             }`}
           >
             <div>
-              <h2 className="text-lg font-semibold">{section.title}</h2>
               {section.prompt ? (
-                <p className="mt-1 text-sm text-muted">{section.prompt}</p>
+                <h2 className="text-lg font-semibold">{section.prompt}</h2>
               ) : null}
+              <p
+                className={
+                  section.prompt
+                    ? "mt-1 text-sm text-muted"
+                    : "text-lg font-semibold"
+                }
+              >
+                {section.title}
+              </p>
             </div>
             {fields.map((field) => {
               const selectionColor = getSelectedFieldColor(field, erhebung);

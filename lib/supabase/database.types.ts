@@ -89,6 +89,16 @@ export type ErhebungRow = {
   lyse_ki_sonstige: boolean;
   lyse_ki_sonstige_timing: "vor Untersuchung" | "nach Untersuchung" | null;
   lyse_ki_sonstige_text: string | null;
+  lyse_ki_oak_vor: boolean;
+  lyse_ki_zeitfenster_vor: boolean;
+  lyse_ki_blutung_cct_vor: boolean;
+  lyse_ki_op_trauma_vor: boolean;
+  lyse_ki_reanimation_vor: boolean;
+  lyse_ki_icb_vor: boolean;
+  lyse_ki_blutungsneigung_vor: boolean;
+  lyse_ki_schwere_blutung_vor: boolean;
+  lyse_ki_endokarditis_vor: boolean;
+  lyse_ki_sonstige_vor: boolean;
   lyse_ki_keine: boolean;
   umstaende_kooperation: boolean;
   umstaende_kooperation_text: string | null;
@@ -99,7 +109,9 @@ export type ErhebungRow = {
   umstaende_sonstige: boolean;
   umstaende_sonstige_text: string | null;
   umstaende_keine: boolean;
+  umstaende_erschwert: "Ja" | "Nein" | null;
   sonstige_anmerkungen_keine: boolean;
+  sonstige_anmerkungen_vorhanden: "Ja" | "Nein" | null;
   sonstige_anmerkungen: string | null;
   nihss: number;
   g_fast: number;

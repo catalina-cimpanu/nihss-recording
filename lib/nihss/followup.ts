@@ -6,8 +6,8 @@ export const FOLLOWUP_EREIGNIS_TYP = "followup";
 export const SHORT_TEXT_MAX = 280;
 
 export const JA_NEIN_OPTIONS: NihssOption[] = [
-  { value: "Ja", label: "Ja", score: null, color: "stroke" },
   { value: "Nein", label: "Nein", score: null, color: "lyse" },
+  { value: "Ja", label: "Ja", score: null, color: "stroke" },
 ];
 
 export type JaNein = "Ja" | "Nein";
@@ -50,6 +50,7 @@ export type KontraindikationKey =
 
 export type KiFlagName = `lyse_ki_${KontraindikationKey}`;
 export type KiTimingName = `lyse_ki_${KontraindikationKey}_timing`;
+export type KiVorName = `lyse_ki_${KontraindikationKey}_vor`;
 export type KiTextName = "lyse_ki_sonstige_text";
 
 export const KI_TIMING_VOR = "vor Untersuchung";
@@ -73,6 +74,46 @@ export function hasNachKi(values: FollowupValues): boolean {
   );
 }
 
+export function nachKiAnswer(values: FollowupValues): JaNein | null {
+  if (hasNachKi(values) || values.lyse_kontraindikation_nach_untersuchung === "Ja") {
+    return "Ja";
+  }
+  if (values.lyse_ki_keine || values.lyse_kontraindikation_nach_untersuchung === "Nein") {
+    return "Nein";
+  }
+  return null;
+}
+
+export function hasUmstandOption(values: FollowupValues): boolean {
+  return UMSTAENDE.some((item) => Boolean(values[item.flag]));
+}
+
+export function umstaendeAnswer(values: FollowupValues): JaNein | null {
+  if (hasUmstandOption(values) || values.umstaende_erschwert === "Ja") {
+    return "Ja";
+  }
+  if (values.umstaende_keine || values.umstaende_erschwert === "Nein") {
+    return "Nein";
+  }
+  return null;
+}
+
+export function anmerkungenAnswer(values: FollowupValues): JaNein | null {
+  if (
+    Boolean(values.sonstige_anmerkungen) ||
+    values.sonstige_anmerkungen_vorhanden === "Ja"
+  ) {
+    return "Ja";
+  }
+  if (
+    values.sonstige_anmerkungen_keine ||
+    values.sonstige_anmerkungen_vorhanden === "Nein"
+  ) {
+    return "Nein";
+  }
+  return null;
+}
+
 export function kiFlag(key: KontraindikationKey): KiFlagName {
   return `lyse_ki_${key}`;
 }
@@ -81,12 +122,17 @@ export function kiTiming(key: KontraindikationKey): KiTimingName {
   return `lyse_ki_${key}_timing`;
 }
 
+export function kiVor(key: KontraindikationKey): KiVorName {
+  return `lyse_ki_${key}_vor`;
+}
+
 export function kontraindikationFields() {
   return KONTRAINDIKATION_OPTIONS.map((item) => ({
     key: item.key,
     label: item.label,
     flag: kiFlag(item.key),
     timing: kiTiming(item.key),
+    selectedBefore: kiVor(item.key),
     text: item.key === "sonstige" ? ("lyse_ki_sonstige_text" as const) : null,
   }));
 }
@@ -112,6 +158,14 @@ export const JA_NEIN_FOLLOWUP_FIELDS = [
     key: "lyse_kontraindikation_beeinflusst",
     label: "Kontraindikation beeinflusst Lyse",
   },
+  {
+    key: "umstaende_erschwert",
+    label: "Umstände",
+  },
+  {
+    key: "sonstige_anmerkungen_vorhanden",
+    label: "Sonstige Anmerkungen",
+  },
 ] as const;
 
 export type FollowupValues = Pick<
@@ -126,6 +180,7 @@ export type FollowupValues = Pick<
   | "lyse_kontraindikation_beeinflusst_text"
   | KiFlagName
   | KiTimingName
+  | KiVorName
   | KiTextName
   | "lyse_ki_keine"
   | "umstaende_kooperation"
@@ -137,7 +192,9 @@ export type FollowupValues = Pick<
   | "umstaende_sonstige"
   | "umstaende_sonstige_text"
   | "umstaende_keine"
+  | "umstaende_erschwert"
   | "sonstige_anmerkungen_keine"
+  | "sonstige_anmerkungen_vorhanden"
   | "sonstige_anmerkungen"
 >;
 
@@ -162,7 +219,9 @@ export function emptyFollowupValues(): FollowupValues {
     umstaende_sonstige: false,
     umstaende_sonstige_text: null,
     umstaende_keine: false,
+    umstaende_erschwert: null,
     sonstige_anmerkungen_keine: false,
+    sonstige_anmerkungen_vorhanden: null,
     sonstige_anmerkungen: null,
   };
 }
@@ -209,16 +268,29 @@ export function clipShortText(value: string): string {
 
 function emptyKiColumns(): Record<KiFlagName, boolean> &
   Record<KiTimingName, KiTiming | null> &
+  Record<KiVorName, boolean> &
   Record<KiTextName, string | null> {
   const next = {} as Record<KiFlagName, boolean> &
     Record<KiTimingName, KiTiming | null> &
+    Record<KiVorName, boolean> &
     Record<KiTextName, string | null>;
   for (const item of KONTRAINDIKATION_OPTIONS) {
     next[kiFlag(item.key)] = false;
     next[kiTiming(item.key)] = null;
+    next[kiVor(item.key)] = false;
   }
   next.lyse_ki_sonstige_text = null;
   return next;
+}
+
+function keepVorSelection(previous: ErhebungRow, next: ErhebungRow) {
+  for (const item of kontraindikationFields()) {
+    const kept =
+      Boolean(previous[item.selectedBefore]) ||
+      previous[item.timing] === KI_TIMING_VOR ||
+      (Boolean(next[item.flag]) && next[item.timing] === KI_TIMING_VOR);
+    Object.assign(next, { [item.selectedBefore]: kept });
+  }
 }
 
 function clearNachKiReasons(next: ErhebungRow) {
@@ -314,17 +386,24 @@ export function applyFollowupPatch(
     clearVorKiReasons(next);
   }
   applyKiTimingRules(erhebung, next, patch);
-  if (patch.lyse_ki_keine) {
+  if (
+    patch.lyse_kontraindikation_nach_untersuchung === "Nein" ||
+    patch.lyse_ki_keine === true
+  ) {
     next.lyse_ki_keine = true;
+    next.lyse_kontraindikation_nach_untersuchung = "Nein";
     clearNachKiReasons(next);
     applyKiTimingRules(erhebung, next, patch);
   }
+  if (patch.lyse_kontraindikation_nach_untersuchung === "Ja") {
+    next.lyse_ki_keine = false;
+    next.lyse_kontraindikation_nach_untersuchung = "Ja";
+  }
   clipKiSonstige(next);
+  keepVorSelection(erhebung, next);
   if (hasNachKi(next)) {
     next.lyse_ki_keine = false;
     next.lyse_kontraindikation_nach_untersuchung = "Ja";
-  } else if (erhebung.lyse_kontraindikation_nach_untersuchung === "Ja") {
-    next.lyse_kontraindikation_nach_untersuchung = "Nein";
   }
 
   if (typeof next.lyse_kontraindikation_nach_welche === "string") {
@@ -346,16 +425,24 @@ export function applyFollowupPatch(
     }
   }
 
-  if (patch.umstaende_keine) {
+  if (patch.umstaende_erschwert === "Nein" || patch.umstaende_keine === true) {
     next.umstaende_keine = true;
+    next.umstaende_erschwert = "Nein";
     for (const item of UMSTAENDE) {
       Object.assign(next, { [item.flag]: false, [item.text]: null });
     }
+  }
+  if (patch.umstaende_erschwert === "Ja") {
+    next.umstaende_keine = false;
+    next.umstaende_erschwert = "Ja";
   }
 
   for (const item of UMSTAENDE) {
     if (next[item.flag]) {
       next.umstaende_keine = false;
+      if (item.flag in patch) {
+        next.umstaende_erschwert = "Ja";
+      }
     }
     if (!next[item.flag]) {
       Object.assign(next, { [item.text]: null });
@@ -364,12 +451,20 @@ export function applyFollowupPatch(
     }
   }
 
-  if (patch.sonstige_anmerkungen != null && patch.sonstige_anmerkungen !== "") {
-    next.sonstige_anmerkungen_keine = false;
-    next.sonstige_anmerkungen = clipShortText(patch.sonstige_anmerkungen);
-  } else if (patch.sonstige_anmerkungen_keine) {
+  if (
+    patch.sonstige_anmerkungen_vorhanden === "Nein" ||
+    patch.sonstige_anmerkungen_keine === true
+  ) {
     next.sonstige_anmerkungen_keine = true;
+    next.sonstige_anmerkungen_vorhanden = "Nein";
     next.sonstige_anmerkungen = null;
+  } else if (patch.sonstige_anmerkungen_vorhanden === "Ja") {
+    next.sonstige_anmerkungen_keine = false;
+    next.sonstige_anmerkungen_vorhanden = "Ja";
+  } else if (patch.sonstige_anmerkungen != null && patch.sonstige_anmerkungen !== "") {
+    next.sonstige_anmerkungen_keine = false;
+    next.sonstige_anmerkungen_vorhanden = "Ja";
+    next.sonstige_anmerkungen = clipShortText(patch.sonstige_anmerkungen);
   } else if (next.sonstige_anmerkungen_keine) {
     next.sonstige_anmerkungen = null;
   } else if (typeof next.sonstige_anmerkungen === "string") {
@@ -387,9 +482,10 @@ export function followupEreignisseFromPatch(
   const events: EreignisInsert[] = [];
 
   for (const field of JA_NEIN_FOLLOWUP_FIELDS) {
-    const derivedNach =
-      field.key === "lyse_kontraindikation_nach_untersuchung";
-    if (!derivedNach && !(field.key in patch)) {
+    const derivedJaNein =
+      field.key === "lyse_kontraindikation_nach_untersuchung" ||
+      field.key === "umstaende_erschwert";
+    if (!derivedJaNein && !(field.key in patch)) {
       continue;
     }
     const value = next[field.key];
@@ -540,24 +636,18 @@ export function preExamFollowupPatch(
       values.lyse_kontraindikation_vor_untersuchung,
   };
 
+  const vorJa = values.lyse_kontraindikation_vor_untersuchung === "Ja";
   for (const item of kontraindikationFields()) {
+    const selected = vorJa && Boolean(values[item.flag]);
     Object.assign(patch, {
-      [item.flag]: Boolean(values[item.flag]),
-      [item.timing]:
-        values.lyse_kontraindikation_vor_untersuchung === "Ja" &&
-        values[item.flag]
-          ? (values[item.timing] ?? KI_TIMING_VOR)
-          : null,
+      [item.flag]: selected,
+      [item.timing]: selected ? (values[item.timing] ?? KI_TIMING_VOR) : null,
     });
     if (item.text) {
       const text = values[item.text];
       Object.assign(patch, {
         [item.text]:
-          values.lyse_kontraindikation_vor_untersuchung === "Ja" &&
-          values[item.flag] &&
-          typeof text === "string"
-            ? clipShortText(text) || null
-            : null,
+          selected && typeof text === "string" ? clipShortText(text) || null : null,
       });
     }
   }

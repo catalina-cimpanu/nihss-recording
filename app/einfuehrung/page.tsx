@@ -61,8 +61,9 @@ export default function EinfuehrungPage() {
           </li>
           <li>
             Bei Kontraindikationen nach der Untersuchung kann{" "}
-            <strong>Keine</strong> gewählt werden, wenn keine weiteren bekannt
-            geworden sind.
+            <strong>Nein</strong> gewählt werden, wenn keine weiteren bekannt
+            geworden sind. Mit <strong>Ja</strong> erscheinen die möglichen
+            Gründe.
           </li>
           <li>
             Nach <strong>Erhebung erstellen</strong> können Solo-Patienten-ID
@@ -109,8 +110,9 @@ export default function EinfuehrungPage() {
           <li>
             <strong>Angaben zum Konsil.</strong> TEMPiS-Verdacht und
             -Empfehlung, Kontraindikationen, Umstände. Nach der Untersuchung
-            können Sie bei Kontraindikationen <strong>Keine</strong> wählen,
-            wenn nichts Weiteres bekannt geworden ist.{" "}
+            können Sie bei Kontraindikationen <strong>Nein</strong> wählen,
+            wenn nichts Weiteres bekannt geworden ist, oder <strong>Ja</strong>
+            , um die Gründe auszuwählen.{" "}
             <strong>Nur speichern</strong> lässt die Felder auf der
             Erhebungsseite änderbar.{" "}
             <strong>Erhebung speichern und abschließen</strong> sperrt sie.

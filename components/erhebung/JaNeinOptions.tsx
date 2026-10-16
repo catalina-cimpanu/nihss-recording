@@ -1,6 +1,7 @@
 "use client";
 
 import OptionButton from "@/components/erhebung/OptionButton";
+import optionStyles from "@/components/nihss_items/nihssOptions.module.css";
 import { JA_NEIN_OPTIONS } from "@/lib/nihss/followup";
 
 type JaNeinOptionsProps = {
@@ -17,7 +18,11 @@ export default function JaNeinOptions({
   onSelect,
 }: JaNeinOptionsProps) {
   return (
-    <div className="flex flex-col gap-2" role="radiogroup" aria-label={name}>
+    <div
+      className={optionStyles.optionRowNowrap}
+      role="radiogroup"
+      aria-label={name}
+    >
       {JA_NEIN_OPTIONS.map((option) => (
         <OptionButton
           key={option.value}

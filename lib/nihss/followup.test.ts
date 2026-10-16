@@ -10,6 +10,9 @@ import {
   KI_TIMING_VOR,
   hasNachKi,
   isRetractedKi,
+  nachKiAnswer,
+  umstaendeAnswer,
+  anmerkungenAnswer,
   needsPreExamFollowup,
   preExamFollowupPatch,
 } from "@/lib/nihss/followup";
@@ -80,20 +83,36 @@ describe("applyFollowupPatch", () => {
     assert.equal(next.lyse_kontraindikation_beeinflusst_text, null);
   });
 
-  it("Keine on circumstances clears selected options; selecting an option turns Keine off", () => {
-    const none = applyFollowupPatch(row(), { umstaende_keine: true });
+  it("Nein on circumstances clears selected options; Ja keeps the question open without ticks", () => {
+    const none = applyFollowupPatch(
+      row({
+        umstaende_kooperation: true,
+        umstaende_kooperation_text: "agitiert",
+      }),
+      { umstaende_erschwert: "Nein" },
+    );
     assert.equal(none.umstaende_keine, true);
+    assert.equal(none.umstaende_erschwert, "Nein");
     assert.equal(none.umstaende_kooperation, false);
     assert.equal(none.umstaende_kooperation_text, null);
+    assert.equal(umstaendeAnswer(none), "Nein");
 
-    const written = applyFollowupPatch(row({ umstaende_keine: true }), {
+    const opened = applyFollowupPatch(row({ umstaende_keine: true }), {
+      umstaende_erschwert: "Ja",
+    });
+    assert.equal(opened.umstaende_keine, false);
+    assert.equal(opened.umstaende_erschwert, "Ja");
+    assert.equal(umstaendeAnswer(opened), "Ja");
+
+    const written = applyFollowupPatch(opened, {
       umstaende_sprachbarriere: true,
     });
     assert.equal(written.umstaende_keine, false);
+    assert.equal(written.umstaende_erschwert, "Ja");
     assert.equal(written.umstaende_sprachbarriere, true);
   });
 
-  it("Keine on nach-KI clears nach options but keeps vor-KI", () => {
+  it("Nein on nach-KI clears nach options but keeps vor-KI; Ja keeps the question open without ticks", () => {
     const none = applyFollowupPatch(
       row({
         lyse_ki_oak: true,
@@ -101,32 +120,55 @@ describe("applyFollowupPatch", () => {
         lyse_ki_zeitfenster: true,
         lyse_ki_zeitfenster_timing: KI_TIMING_NACH,
       }),
-      { lyse_ki_keine: true },
+      { lyse_kontraindikation_nach_untersuchung: "Nein" },
     );
     assert.equal(none.lyse_ki_keine, true);
+    assert.equal(none.lyse_kontraindikation_nach_untersuchung, "Nein");
     assert.equal(none.lyse_ki_oak, true);
     assert.equal(none.lyse_ki_oak_timing, KI_TIMING_VOR);
     assert.equal(none.lyse_ki_zeitfenster, false);
     assert.equal(none.lyse_ki_zeitfenster_timing, null);
     assert.equal(hasNachKi(none), false);
+    assert.equal(nachKiAnswer(none), "Nein");
 
-    const written = applyFollowupPatch(row({ lyse_ki_keine: true }), {
+    const opened = applyFollowupPatch(row({ lyse_ki_keine: true }), {
+      lyse_kontraindikation_nach_untersuchung: "Ja",
+    });
+    assert.equal(opened.lyse_ki_keine, false);
+    assert.equal(opened.lyse_kontraindikation_nach_untersuchung, "Ja");
+    assert.equal(nachKiAnswer(opened), "Ja");
+
+    const written = applyFollowupPatch(opened, {
       lyse_ki_oak: true,
       lyse_ki_oak_timing: KI_TIMING_NACH,
     });
     assert.equal(written.lyse_ki_keine, false);
     assert.equal(written.lyse_ki_oak, true);
+    assert.equal(hasNachKi(written), true);
   });
 
-  it("Keine on remarks clears the text; text turns Keine off", () => {
-    const none = applyFollowupPatch(row(), { sonstige_anmerkungen_keine: true });
+  it("Nein on remarks clears the text; Ja keeps the field open without text", () => {
+    const none = applyFollowupPatch(row(), {
+      sonstige_anmerkungen_vorhanden: "Nein",
+    });
     assert.equal(none.sonstige_anmerkungen, null);
     assert.equal(none.sonstige_anmerkungen_keine, true);
+    assert.equal(none.sonstige_anmerkungen_vorhanden, "Nein");
+    assert.equal(anmerkungenAnswer(none), "Nein");
 
-    const written = applyFollowupPatch(row({ sonstige_anmerkungen_keine: true }), {
+    const opened = applyFollowupPatch(row({ sonstige_anmerkungen_keine: true }), {
+      sonstige_anmerkungen_vorhanden: "Ja",
+    });
+    assert.equal(opened.sonstige_anmerkungen_keine, false);
+    assert.equal(opened.sonstige_anmerkungen_vorhanden, "Ja");
+    assert.equal(anmerkungenAnswer(opened), "Ja");
+
+    const written = applyFollowupPatch(opened, {
       sonstige_anmerkungen: "noch etwas",
     });
     assert.equal(written.sonstige_anmerkungen_keine, false);
+    assert.equal(written.sonstige_anmerkungen_vorhanden, "Ja");
+    assert.equal(written.sonstige_anmerkungen, "noch etwas");
   });
 
   it("sets timing on first KI tick and does not overwrite vor with nach except via reclassify", () => {
@@ -200,7 +242,48 @@ describe("applyFollowupPatch", () => {
 
     const removed = applyFollowupPatch(nachTick, { lyse_ki_zeitfenster: false });
     assert.equal(removed.lyse_ki_zeitfenster, false);
-    assert.equal(removed.lyse_kontraindikation_nach_untersuchung, "Nein");
+    assert.equal(removed.lyse_kontraindikation_nach_untersuchung, "Ja");
+  });
+
+  it("keeps a before-exam KI after it is reclassified as nach", () => {
+    const before = applyFollowupPatch(row(), {
+      lyse_kontraindikation_vor_untersuchung: "Ja",
+      lyse_ki_oak: true,
+      lyse_ki_oak_timing: KI_TIMING_VOR,
+    });
+    assert.equal(before.lyse_ki_oak_vor, true);
+    assert.equal(before.lyse_ki_oak_timing, KI_TIMING_VOR);
+
+    const after = applyFollowupPatch(before, {
+      lyse_ki_oak: true,
+      lyse_ki_oak_timing: KI_TIMING_NACH,
+    });
+    assert.equal(after.lyse_ki_oak_vor, true);
+    assert.equal(after.lyse_ki_oak, true);
+    assert.equal(after.lyse_ki_oak_timing, KI_TIMING_NACH);
+
+    const onlyAfter = applyFollowupPatch(row(), {
+      lyse_ki_zeitfenster: true,
+      lyse_ki_zeitfenster_timing: KI_TIMING_NACH,
+    });
+    assert.equal(onlyAfter.lyse_ki_zeitfenster_vor, false);
+    assert.equal(onlyAfter.lyse_ki_zeitfenster, true);
+  });
+
+  it("clears hidden vor ticks when Nein is chosen before Weiter", () => {
+    const hidden = preExamFollowupPatch({
+      ...emptyFollowupValues(),
+      lyse_kontraindikation_vor_untersuchung: "Nein",
+      lyse_ki_oak: true,
+      lyse_ki_oak_timing: KI_TIMING_VOR,
+    });
+    assert.equal(hidden.lyse_ki_oak, false);
+    assert.equal(hidden.lyse_ki_oak_timing, null);
+
+    const saved = applyFollowupPatch(row(), hidden);
+    assert.equal(saved.lyse_kontraindikation_vor_untersuchung, "Nein");
+    assert.equal(saved.lyse_ki_oak, false);
+    assert.equal(saved.lyse_ki_oak_vor, false);
   });
 
   it("clears vor KI reasons when vor is not Ja, keeps nach reasons, and clears Sonstige text when unchecked", () => {

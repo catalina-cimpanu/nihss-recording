@@ -1,9 +1,12 @@
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 import {
-  UMSTAENDE,
+  anmerkungenAnswer,
   hasNachKi,
+  hasUmstandOption,
   isLyseKiVorMissing,
   isSoloPatientenIdMissing,
+  nachKiAnswer,
+  umstaendeAnswer,
   type FollowupValues,
 } from "@/lib/nihss/followup";
 
@@ -56,18 +59,13 @@ export function missingFollowupLabels(values: FollowupValues): string[] {
   ) {
     missing.push("Beschreibung zur Lyse-Beeinflussung");
   }
-  if (!values.lyse_ki_keine && !hasNachKi(values)) {
+  if (nachKiAnswer(values) !== "Nein" && !hasNachKi(values)) {
     missing.push("Lyse-Kontraindikation nach Untersuchung");
   }
-  const hasUmstand =
-    values.umstaende_keine ||
-    UMSTAENDE.some((item) => Boolean(values[item.flag]));
-  if (!hasUmstand) {
+  if (umstaendeAnswer(values) !== "Nein" && !hasUmstandOption(values)) {
     missing.push("Umstände der Untersuchung");
   }
-  const hasAnmerkung =
-    values.sonstige_anmerkungen_keine || Boolean(values.sonstige_anmerkungen);
-  if (!hasAnmerkung) {
+  if (anmerkungenAnswer(values) !== "Nein" && !values.sonstige_anmerkungen) {
     missing.push("Sonstige Anmerkungen");
   }
   return missing;

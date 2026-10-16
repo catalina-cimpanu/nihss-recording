@@ -18,3 +18,5 @@ Durations (`dauer_*`, `stroke_entscheidung_at`, `lyse_entscheidung_at`) are **no
 | `010_stroke_lyse_gleichzeitig.sql` | Simultaneous Stroke/Lyse (0 s) | |
 | `011_lyse_ki_keine.sql` | Lyse KI: Keine | |
 | `012_drop_unused_duration_columns.sql` | Drop unused duration columns | |
+| `013_umstaende_anmerkungen_ja_nein.sql` | Umstände / Anmerkungen: Ja/Nein | |
+| `014_lyse_ki_vor_selection.sql` | Kontraindikation: frozen vor selection | |

@@ -105,7 +105,7 @@ export default function StickyScoreBar({
           <div className="flex items-center gap-1.5 md:block">
             <p className="w-11 shrink-0 text-[0.7rem] font-semibold leading-tight text-tempis-blue-darker md:mb-1 md:w-auto md:text-xs">
               <span className="md:hidden">Stroke</span>
-              <span className="hidden md:inline">Stroke (Dokumentation)</span>
+              <span className="hidden md:inline">Stroke</span>
             </p>
             <div className="min-w-0 flex-1" data-sticky-option-row>
               <FieldOptions
@@ -121,7 +121,7 @@ export default function StickyScoreBar({
           <div className="flex items-center gap-1.5 md:block">
             <p className="w-11 shrink-0 text-[0.7rem] font-semibold leading-tight text-tempis-signal md:mb-1 md:w-auto md:text-xs">
               <span className="md:hidden">Lyse</span>
-              <span className="hidden md:inline">Lyse (Dokumentation)</span>
+              <span className="hidden md:inline">Lyse</span>
             </p>
             <div className="min-w-0 flex-1" data-sticky-option-row>
               <FieldOptions
