@@ -1,6 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+export const HYPOTHETICAL_REMINDER_MS = 5000;
+
+/** Popup before the Untersuchung starts; closes itself after a few seconds. */
+export function HypotheticalReminder({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const id = window.setTimeout(onClose, HYPOTHETICAL_REMINDER_MS);
+    return () => window.clearTimeout(id);
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="hypothetical-reminder-title"
+      onClick={onClose}
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/30 px-4"
+    >
+      <div className="w-full max-w-md overflow-hidden rounded-xl bg-surface shadow-xl">
+        <div className="space-y-3 p-4">
+          <h2 id="hypothetical-reminder-title" className="text-lg font-semibold">
+            Bitte beachten
+          </h2>
+          <p>
+            Stroke/Lyse:{" "}
+            <strong className="text-tempis-signal">hypothetische Entscheidung</strong>{" "}
+            – rein nach NIHSS-Befund, unabhängig von vorliegenden
+            Kontraindikationen.
+          </p>
+          <p className="text-sm text-muted">
+            Bitte sofort klicken, sobald Sie sich klinisch entscheiden würden.
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg bg-tempis-blue-dark px-4 py-2 font-semibold text-white hover:bg-tempis-blue-darker"
+          >
+            OK
+          </button>
+        </div>
+        <div
+          className="h-1 origin-left bg-tempis-signal"
+          style={{ animation: `toast-timer ${HYPOTHETICAL_REMINDER_MS}ms linear forwards` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export const HYPOTHETICAL_EXPLANATION =
   "unabhängig von vorliegenden Kontraindikationen, rein auf der NIHSS Untersuchung basiert";

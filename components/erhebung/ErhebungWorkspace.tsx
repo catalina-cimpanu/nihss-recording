@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import ErhebungExamDialogs from "@/components/erhebung/ErhebungExamDialogs";
 import ErhebungNihssForm from "@/components/erhebung/ErhebungNihssForm";
 import FollowupFields from "@/components/erhebung/FollowupFields";
+import { HypotheticalReminder } from "@/components/erhebung/HypotheticalInfo";
 import ExamViewToggle from "@/components/erhebung/ExamViewToggle";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
 import PauseList from "@/components/erhebung/PauseList";
@@ -90,6 +91,13 @@ export default function ErhebungWorkspace({
   const [popupLyse, setPopupLyse] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [toasts, setToasts] = useState<WarningToast[]>([]);
+  // Reminder when the page opens before the Untersuchung has started.
+  const [showReminder, setShowReminder] = useState(
+    () =>
+      initialErhebung.untersuchung_status === "offen" &&
+      !initialErhebung.startzeit_untersuchung,
+  );
+  const closeReminder = useCallback(() => setShowReminder(false), []);
   const { mode: viewMode, setMode: setViewMode } = useExamViewMode();
   const stickyOptionHeight = useStickyOptionHeight();
   const lastClickRef = useRef<{ fieldKey: string; at: number } | null>(null);
@@ -803,6 +811,8 @@ export default function ErhebungWorkspace({
       ) : (
         <ScrollToTopButton className="bottom-4" />
       )}
+
+      {showReminder ? <HypotheticalReminder onClose={closeReminder} /> : null}
 
       {openPause ? (
         <PauseOverlay

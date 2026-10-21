@@ -68,13 +68,13 @@ body {
     box-shadow: 0 0 0 2px rgb(222 186 10 / 0.9);
   }
   50% {
-    box-shadow: 0 0 0 6px rgb(222 186 10 / 0.3);
+    box-shadow: 0 0 0 7px rgb(222 186 10 / 0.3);
   }
 }
 
 .decision-pending {
   border-radius: 0.6rem;
-  animation: decision-pending 2s ease-in-out infinite;
+  animation: decision-pending 4s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
