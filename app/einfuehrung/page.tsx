@@ -78,9 +78,10 @@ export default function EinfuehrungPage() {
           </li>
           <li>
             <strong>Untersuchung beenden.</strong> Es folgen, falls nötig,
-            Hinweise zu fehlenden Feldern, dann hypothetische Stroke/Lyse{" "}
-            <em>nach</em> vollständigem NIHSS, dann die Bestätigung. Die
-            NIHSS-Angaben sind danach nur noch lesbar. Die Popups zeigen{" "}
+            Hinweise zu fehlenden Feldern, dann die Bestätigung und danach die
+            hypothetische Stroke/Lyse-Entscheidung <em>nach</em> vollständigem
+            NIHSS (Pflichtangabe). Die NIHSS-Angaben sind ab der Bestätigung nur
+            noch lesbar. Die Popups zeigen{" "}
             <strong>Schritt x von y</strong>.
           </li>
           <li>

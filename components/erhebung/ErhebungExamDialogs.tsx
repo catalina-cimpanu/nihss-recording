@@ -49,7 +49,6 @@ type ErhebungExamDialogsProps = {
   canNormalizeMissing: boolean;
   onAfterSelect: (field: ClickableField, value: string) => void;
   onAfterContinue: () => void;
-  onAfterCancel: () => void;
   onFollowupChange: (patch: Partial<ErhebungRow>) => void;
   onFollowupSave: () => void;
   onFollowupCloseErhebung: () => void;
@@ -75,7 +74,6 @@ export default function ErhebungExamDialogs({
   canNormalizeMissing,
   onAfterSelect,
   onAfterContinue,
-  onAfterCancel,
   onFollowupChange,
   onFollowupSave,
   onFollowupCloseErhebung,
@@ -111,7 +109,6 @@ export default function ErhebungExamDialogs({
           stepLabel={stepLabel("afterCompletion")}
           onSelect={onAfterSelect}
           onContinue={onAfterContinue}
-          onCancel={onAfterCancel}
         />
       ) : null}
 

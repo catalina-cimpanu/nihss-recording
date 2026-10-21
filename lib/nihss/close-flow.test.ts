@@ -10,20 +10,20 @@ import {
 describe("closeFlowStep", () => {
   it("counts four steps when the missing-fields warning is shown", () => {
     assert.deepEqual(closeFlowStep("warning", true), { current: 1, total: 4 });
+    assert.deepEqual(closeFlowStep("examClose", true), { current: 2, total: 4 });
     assert.deepEqual(closeFlowStep("afterCompletion", true), {
-      current: 2,
+      current: 3,
       total: 4,
     });
-    assert.deepEqual(closeFlowStep("examClose", true), { current: 3, total: 4 });
     assert.deepEqual(closeFlowStep("followup", true), { current: 4, total: 4 });
   });
 
   it("counts three steps when the warning is skipped", () => {
+    assert.deepEqual(closeFlowStep("examClose", false), { current: 1, total: 3 });
     assert.deepEqual(closeFlowStep("afterCompletion", false), {
-      current: 1,
+      current: 2,
       total: 3,
     });
-    assert.deepEqual(closeFlowStep("examClose", false), { current: 2, total: 3 });
     assert.deepEqual(closeFlowStep("followup", false), { current: 3, total: 3 });
   });
 });
@@ -38,7 +38,7 @@ describe("formatCloseFlowStep", () => {
 });
 
 describe("reduceCloseFlow", () => {
-  it("walks warning → after-completion → exam close → followup", () => {
+  it("walks warning → exam close → after-completion → followup", () => {
     let state = reduceCloseFlow(INITIAL_CLOSE_FLOW, {
       type: "stop-requested",
       needsWarning: true,
@@ -47,12 +47,12 @@ describe("reduceCloseFlow", () => {
     assert.equal(state.hasWarning, true);
 
     state = reduceCloseFlow(state, { type: "warning-continue" });
-    assert.equal(state.screen, "afterCompletion");
-
-    state = reduceCloseFlow(state, { type: "after-continue" });
     assert.equal(state.screen, "examClose");
 
     state = reduceCloseFlow(state, { type: "exam-closed" });
+    assert.equal(state.screen, "afterCompletion");
+
+    state = reduceCloseFlow(state, { type: "after-continue" });
     assert.equal(state.screen, "followup");
 
     state = reduceCloseFlow(state, { type: "followup-close-requested" });
@@ -68,7 +68,7 @@ describe("reduceCloseFlow", () => {
       type: "stop-requested",
       needsWarning: false,
     });
-    assert.equal(state.screen, "afterCompletion");
+    assert.equal(state.screen, "examClose");
     assert.equal(state.hasWarning, false);
   });
 });

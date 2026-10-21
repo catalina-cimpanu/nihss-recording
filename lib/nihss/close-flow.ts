@@ -14,8 +14,8 @@ export function closeFlowStep(
   hasWarning: boolean,
 ): CloseFlowStep {
   const stages: CloseFlowStage[] = hasWarning
-    ? ["warning", "afterCompletion", "examClose", "followup"]
-    : ["afterCompletion", "examClose", "followup"];
+    ? ["warning", "examClose", "afterCompletion", "followup"]
+    : ["examClose", "afterCompletion", "followup"];
   return { current: stages.indexOf(stage) + 1, total: stages.length };
 }
 
@@ -76,17 +76,18 @@ export function reduceCloseFlow(
       return {
         ...state,
         hasWarning: false,
-        screen: "afterCompletion",
+        screen: "examClose",
         erhebungConfirm: false,
       };
     case "cancel-exam-flow":
       return { ...state, screen: "idle", erhebungConfirm: false };
     case "warning-continue":
-      return { ...state, screen: "afterCompletion" };
-    case "after-continue":
       return { ...state, screen: "examClose" };
+    // The hypothetical decision is asked after the Untersuchung is ended.
     case "exam-closed":
-      return { ...state, screen: "followup", erhebungConfirm: false };
+      return { ...state, screen: "afterCompletion", erhebungConfirm: false };
+    case "after-continue":
+      return { ...state, screen: "followup" };
     case "followup-saved":
       return { ...state, screen: "idle", erhebungConfirm: false };
     case "followup-close-requested":

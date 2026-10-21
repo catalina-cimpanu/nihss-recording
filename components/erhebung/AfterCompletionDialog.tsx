@@ -19,7 +19,6 @@ type AfterCompletionDialogProps = {
   stepLabel?: string;
   onSelect: (field: ClickableField, value: string) => void;
   onContinue: () => void;
-  onCancel: () => void;
 };
 
 export default function AfterCompletionDialog({
@@ -28,7 +27,6 @@ export default function AfterCompletionDialog({
   stepLabel,
   onSelect,
   onContinue,
-  onCancel,
 }: AfterCompletionDialogProps) {
   const [infoOpen, setInfoOpen] = useState(false);
 
@@ -36,8 +34,8 @@ export default function AfterCompletionDialog({
     <AppDialog
       title="Hypothetische Entscheidung"
       stepLabel={stepLabel}
-      dismissible
-      onClose={onCancel}
+      // The Untersuchung is already ended: the decision is required.
+      dismissible={false}
     >
       <p className="text-sm">
         Bitte{" "}
@@ -94,13 +92,6 @@ export default function AfterCompletionDialog({
           className="rounded-lg bg-tempis-blue-dark px-4 py-2 font-semibold text-white hover:bg-tempis-blue-darker disabled:opacity-50"
         >
           Weiter
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg border border-border px-4 py-2 font-semibold"
-        >
-          Abbrechen
         </button>
       </div>
     </AppDialog>

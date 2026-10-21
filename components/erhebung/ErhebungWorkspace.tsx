@@ -350,25 +350,13 @@ export default function ErhebungWorkspace({
       type: "stop-requested",
       needsWarning: needsIncompleteWarning || needsDecisionWarning,
     });
-    if (!(needsIncompleteWarning || needsDecisionWarning)) {
-      const current = erhebungRef.current;
-      setPopupStroke(current.stroke_after_completion_status);
-      setPopupLyse(current.lyse_after_completion_status);
-    }
   }
 
-  function proceedToAfterCompletion() {
-    const current = erhebungRef.current;
-    setPopupStroke(current.stroke_after_completion_status);
-    setPopupLyse(current.lyse_after_completion_status);
+  function proceedToExamClose() {
     dispatchCloseFlow({ type: "warning-continue" });
   }
 
   function proceedToFollowup() {
-    dispatchCloseFlow({ type: "exam-closed" });
-  }
-
-  function proceedToFinalClose() {
     dispatchCloseFlow({ type: "after-continue" });
   }
 
@@ -415,7 +403,8 @@ export default function ErhebungWorkspace({
     field: ClickableField,
     value: string,
   ) {
-    if (readOnly) {
+    // Asked right after the Untersuchung was ended.
+    if (closeFlow.screen !== "afterCompletion") {
       return;
     }
 
@@ -425,7 +414,7 @@ export default function ErhebungWorkspace({
     }
 
     const result = applyAfterCompletionClick({
-      erhebung,
+      erhebung: erhebungRef.current,
       field,
       option,
       now: new Date(),
@@ -455,7 +444,9 @@ export default function ErhebungWorkspace({
       kind: "stop",
     });
     await persist(result.erhebung, [result.ereignis]);
-    proceedToFollowup();
+    setPopupStroke(result.erhebung.stroke_after_completion_status);
+    setPopupLyse(result.erhebung.lyse_after_completion_status);
+    dispatchCloseFlow({ type: "exam-closed" });
   }
 
   async function savePauseGrund(index: number, grund: PauseGrundAngabe) {
@@ -522,7 +513,7 @@ export default function ErhebungWorkspace({
       hasInvalidAtaxiaLimbCount(result.erhebung) ||
       hasLyseJaWithKeinStroke(result.erhebung);
     if (!stillNeedsWarning) {
-      proceedToAfterCompletion();
+      proceedToExamClose();
     }
     await persist(result.erhebung, result.ereignisse);
   }
@@ -631,8 +622,7 @@ export default function ErhebungWorkspace({
           lyseJaWithKeinStroke={lyseJaWithKeinStroke}
           canNormalizeMissing={canNormalizeMissing}
           onAfterSelect={handleAfterCompletionSelect}
-          onAfterContinue={proceedToFinalClose}
-          onAfterCancel={() => dispatchCloseFlow({ type: "cancel-exam-flow" })}
+          onAfterContinue={proceedToFollowup}
           onFollowupChange={handleFollowupChange}
           onFollowupSave={() => {
             void handleFollowupFinish();
@@ -640,7 +630,7 @@ export default function ErhebungWorkspace({
           onFollowupCloseErhebung={() => {
             void handleFollowupSaveAndClose();
           }}
-          onWarningContinue={proceedToAfterCompletion}
+          onWarningContinue={proceedToExamClose}
           onNormalizeMissing={() => {
             void markMissingAsNormal();
           }}
