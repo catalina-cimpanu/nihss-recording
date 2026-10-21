@@ -15,64 +15,35 @@ export default function EinfuehrungPage() {
         <h2 className="text-lg font-semibold">Bitte beachten</h2>
         <ol className="list-decimal space-y-3 pl-5 text-sm">
           <li>
-            Bei der Untersuchung bitte die vorgegebene Reihenfolge der Fragen
-            einhalten.
+            Bei der Untersuchung bitte die{" "}
+            <strong>vorgegebene Reihenfolge</strong> der Fragen einhalten.
           </li>
           <li>
-            Da Zeitanalysen durchgeführt werden sollen, bitte auf präzise
-            Aktivierung der kritischen Buttons achten (v.&nbsp;a.{" "}
-            <strong>Untersuchung starten</strong>, Stroke-Entscheidung,
-            Lyse-Entscheidung, <strong>Untersuchung beenden</strong>).
+            Da Zeitanalysen durchgeführt werden sollen, bitte auf{" "}
+            <strong>präzise Aktivierung der kritischen Buttons</strong>
+            {" "}achten (v.&nbsp;a. Untersuchung starten, Stroke-Entscheidung,
+            Lyse-Entscheidung, Untersuchung beenden).
           </li>
           <li>
-            Der Start der Untersuchung in der App entspricht nicht automatischdem Beginn des
-            Videokonsils (sobald die Videoverbindung hergestellt ist), sondern dem Start der Untersuchung. Eine
-            etwaige Erhebung oder Vervollständigung der Anamnese erfolgt erst
-            nach Beendigung der Untersuchung.
+            <strong>
+              Die Untersuchungsdauer darf die Anamnese nicht beinhalten!
+            </strong>{" "}
+            D.&nbsp;h. „Untersuchung starten“ erst dann klicken, wenn man
+            tatsächlich mit der NIHSS-Untersuchung beginnt.
           </li>
           <li>
             Wichtig: Bei den in der App abgefragten Entscheidungen zu Stroke /
-            Lyse geht es um rein hypothetische Entscheidungen, bei denen allein
-            der erhobene klinische Befund entscheidend ist — ungeachtet aller
-            Begleitumstände einschließlich Kontraindikationen.
+            Lyse geht es um rein{" "}
+            <strong>hypothetische Entscheidungen</strong>, bei denen allein der
+            erhobene klinische Befund entscheidend ist —{" "}
+            <strong>
+              ungeachtet aller Begleitumstände einschließlich Kontraindikationen
+            </strong>.
           </li>
           <li>
-            Vor dem Beenden wird auf fehlende NIHSS-Felder hingewiesen, falls
-            nötig. Eine offene Stroke- oder Lyse-Entscheidung hält den
-            Abschluss nicht auf. Danach erscheint das Fenster zur hypothetischen
-            Stroke-/Lyse-Entscheidung: bitte Stroke und Lyse noch einmal{" "}
-            <strong className="underline">nach</strong> vollständiger
-            NIHSS-Erhebung angeben — ebenfalls hypothetisch, nur anhand des
-            klinischen Befunds. Diese Angabe wird getrennt von den Klicks
-            während der Untersuchung gespeichert. Danach bestätigen Sie{" "}
-            <strong>Untersuchung beenden</strong>. Die NIHSS-Angaben sind dann
-            nur noch lesbar.
-          </li>
-          <li>
-            Anschließend erscheinen die Angaben zum Konsil. Mit{" "}
-            <strong>Speichern</strong> bleiben sie auf der Erhebungsseite
-            änderbar. Mit <strong>Abschließen</strong> im Fenster, oder mit{" "}
-            <strong>Erhebung abschließen</strong> auf der Seite, werden die
-            Konsilangaben gesperrt. Mit{" "}
-            <strong>Angaben zum Konsil nachträglich korrigieren</strong> lassen
-            sie sich wieder ändern. Die NIHSS-Angaben bleiben gesperrt.
-          </li>
-          <li>
-            Wird Lyse ja gewählt, solange Stroke nicht Ja ist, erscheint eine
-            Rückfrage: Stroke ebenfalls auf Ja setzen, oder die Lyse-Auswahl
-            zurücknehmen.
-          </li>
-          <li>
-            Bei Kontraindikationen nach der Untersuchung kann{" "}
-            <strong>Nein</strong> gewählt werden, wenn keine weiteren bekannt
-            geworden sind. Mit <strong>Ja</strong> erscheinen die möglichen
-            Gründe.
-          </li>
-          <li>
-            Nach <strong>Erhebung erstellen</strong> können Solo-Patienten-ID
-            (nur Ziffern) und eine bekannte Lyse-Kontraindikation vor der
-            Untersuchung angegeben oder übersprungen werden. Übersprungene
-            Angaben lassen sich am Ende nachtragen.
+            Wenn vergessen wurde, die Lyse- und/oder Stroke-Entscheidung während
+            der Untersuchung zum richtigen Zeitpunkt anzuklicken, kann diese
+            nachträglich manuell festgelegt werden.
           </li>
         </ol>
       </section>
