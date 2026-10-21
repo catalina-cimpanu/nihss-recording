@@ -23,3 +23,4 @@ Durations (`dauer_*`, `stroke_entscheidung_at`, `lyse_entscheidung_at`) are **no
 | `015_symptome.sql` | Symptome before and after the exam | |
 | `016_symptom_sonstiges.sql` | Symptom Sonstiges with free text | |
 | `017_lyse_ki_only_vor.sql` | Kontraindikation: only "vor Untersuchung bekannt", drop timing columns | |
+| `018_umstaende_weitere.sql` | Umstände: Ablenkung, technische Probleme, Hörminderung | |

@@ -93,6 +93,12 @@ export type ErhebungRow = {
   umstaende_sprachbarriere_text: string | null;
   umstaende_gestoerte_ablaeufe: boolean;
   umstaende_gestoerte_ablaeufe_text: string | null;
+  umstaende_ablenkung: boolean;
+  umstaende_ablenkung_text: string | null;
+  umstaende_technische_probleme: boolean;
+  umstaende_technische_probleme_text: string | null;
+  umstaende_hoerminderung: boolean;
+  umstaende_hoerminderung_text: string | null;
   umstaende_sonstige: boolean;
   umstaende_sonstige_text: string | null;
   umstaende_keine: boolean;

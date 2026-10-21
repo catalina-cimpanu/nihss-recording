@@ -60,9 +60,12 @@ export const SYMPTOME: {
 ];
 
 export const UMSTAENDE_KEYS = [
+  "hoerminderung",
   "kooperation",
   "sprachbarriere",
   "gestoerte_ablaeufe",
+  "ablenkung",
+  "technische_probleme",
   "sonstige",
 ] as const;
 
@@ -192,6 +195,12 @@ export type FollowupValues = Pick<
   | "umstaende_sprachbarriere_text"
   | "umstaende_gestoerte_ablaeufe"
   | "umstaende_gestoerte_ablaeufe_text"
+  | "umstaende_ablenkung"
+  | "umstaende_ablenkung_text"
+  | "umstaende_technische_probleme"
+  | "umstaende_technische_probleme_text"
+  | "umstaende_hoerminderung"
+  | "umstaende_hoerminderung_text"
   | "umstaende_sonstige"
   | "umstaende_sonstige_text"
   | "umstaende_keine"
@@ -226,6 +235,12 @@ export function emptyFollowupValues(): FollowupValues {
     umstaende_sprachbarriere_text: null,
     umstaende_gestoerte_ablaeufe: false,
     umstaende_gestoerte_ablaeufe_text: null,
+    umstaende_ablenkung: false,
+    umstaende_ablenkung_text: null,
+    umstaende_technische_probleme: false,
+    umstaende_technische_probleme_text: null,
+    umstaende_hoerminderung: false,
+    umstaende_hoerminderung_text: null,
     umstaende_sonstige: false,
     umstaende_sonstige_text: null,
     umstaende_keine: false,
@@ -255,10 +270,29 @@ export const UMSTAENDE: {
     label: "Sprachbarriere",
   },
   {
+    key: "hoerminderung",
+    flag: "umstaende_hoerminderung",
+    text: "umstaende_hoerminderung_text",
+    label: "Hörminderung",
+  },	
+  {
     key: "gestoerte_ablaeufe",
     flag: "umstaende_gestoerte_ablaeufe",
     text: "umstaende_gestoerte_ablaeufe_text",
     label: "Gestörte Abläufe",
+  },
+  {
+    key: "ablenkung",
+    flag: "umstaende_ablenkung",
+    text: "umstaende_ablenkung_text",
+    label:
+      "Ablenkung durch stressige Gesamtsituation (viele Konsile, viele Anrufe etc.)",
+  },
+  {
+    key: "technische_probleme",
+    flag: "umstaende_technische_probleme",
+    text: "umstaende_technische_probleme_text",
+    label: "Technische Probleme (Internetverbindung, Teladoc-Verbindung etc.)",
   },
   {
     key: "sonstige",
