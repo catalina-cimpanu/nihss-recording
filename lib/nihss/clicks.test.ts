@@ -10,6 +10,7 @@ import {
   applyLifecycleEvent,
   applyStrokeLyseSimultaneous,
   applyLyseReset,
+  applyPauseDiscard,
   applyPauseGrundCorrection,
   applyPauseToggle,
   shouldPromptLyseWithoutStroke,
@@ -423,5 +424,36 @@ describe("applyPauseGrundCorrection", () => {
       applyPauseGrundCorrection({ erhebung: running, index: 0, grund: { gruende: ["Sonstige"], sonstige_text: "x" }, now }).ereignisse.length,
       0,
     );
+  });
+});
+
+describe("applyPauseDiscard", () => {
+  it("removes a mistaken running pause so its time counts again", () => {
+    const earlier = {
+      von: "2026-08-27T10:01:00.000Z",
+      bis: "2026-08-27T10:02:00.000Z",
+      gruende: ["Telefonat" as const],
+      sonstige_text: null,
+    };
+    const paused = applyPauseToggle({
+      erhebung: row({ startzeit_untersuchung: "2026-08-27T10:00:00.000Z", pausen: [earlier] }),
+      now: new Date("2026-08-27T10:05:00.000Z"),
+    });
+    const discarded = applyPauseDiscard({
+      erhebung: paused.erhebung,
+      now: new Date("2026-08-27T10:05:03.000Z"),
+    });
+    assert.equal(isPaused(discarded.erhebung), false);
+    assert.deepEqual(discarded.erhebung.pausen, [earlier]);
+    assert.equal(discarded.ereignisse[0]?.feld_key, "pause_discard");
+    assert.ok(discarded.erhebung.timeline.includes("Pause verworfen (verklickt)"));
+
+    const ended = row({ ...discarded.erhebung, endzeit_untersuchung: "2026-08-27T10:10:00.000Z" });
+    assert.equal(getDecisionDurations(ended).dauer_untersuchung_ms, 9 * 60_000);
+  });
+
+  it("does nothing when no pause is running", () => {
+    const result = applyPauseDiscard({ erhebung: row(), now: new Date() });
+    assert.equal(result.ereignisse.length, 0);
   });
 });

@@ -74,11 +74,32 @@ body {
 
 .decision-pending {
   border-radius: 0.6rem;
-  animation: decision-pending 4s ease-in-out infinite;
+  animation: decision-pending 5s ease-in-out infinite;
+}
+
+/* Recurring stronger flash on an undecided row (interval: DECISION_NUDGE_MS). */
+@keyframes decision-nudge {
+  0%,
+  50%,
+  100% {
+    box-shadow: 0 0 0 2px rgb(222 186 10 / 0.9);
+    background-color: rgb(222 186 10 / 0);
+  }
+  /* tempis-signal red */
+  25%,
+  75% {
+    box-shadow: 0 0 0 10px rgb(193 19 19 / 0.6);
+    background-color: rgb(193 19 19 / 0.25);
+  }
+}
+
+.decision-pending.decision-nudge {
+  animation: decision-nudge 1.2s ease-in-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .decision-pending {
+  .decision-pending,
+  .decision-pending.decision-nudge {
     animation: none;
     box-shadow: 0 0 0 3px rgb(222 186 10 / 0.9);
   }

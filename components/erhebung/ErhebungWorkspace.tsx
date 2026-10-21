@@ -34,6 +34,7 @@ import {
   applyLifecycleEvent,
   applyMissingFieldsAsNormal,
   applyLyseReset,
+  applyPauseDiscard,
   applyPauseGrundCorrection,
   applyPauseToggle,
   shouldPromptLyseWithoutStroke,
@@ -343,6 +344,16 @@ export default function ErhebungWorkspace({
       grund,
     });
     await persist(result.erhebung, [result.ereignis]);
+  }
+
+  async function handlePauseDiscard() {
+    const result = applyPauseDiscard({
+      erhebung: erhebungRef.current,
+      now: new Date(),
+    });
+    if (result.ereignisse.length > 0) {
+      await persist(result.erhebung, result.ereignisse);
+    }
   }
 
   async function handleStopRequest() {
@@ -820,6 +831,9 @@ export default function ErhebungWorkspace({
           von={openPause.von}
           onResume={(grund) => {
             void handlePauseToggle(grund);
+          }}
+          onDiscard={() => {
+            void handlePauseDiscard();
           }}
         />
       ) : null}

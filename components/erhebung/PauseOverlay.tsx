@@ -12,9 +12,15 @@ import { formatBerlinTime } from "@/lib/nihss/timeline";
 type PauseOverlayProps = {
   von: string;
   onResume: (grund: PauseGrundAngabe) => void;
+  /** Pause started by mistake: undo it without a reason. */
+  onDiscard: () => void;
 };
 
-export default function PauseOverlay({ von, onResume }: PauseOverlayProps) {
+export default function PauseOverlay({
+  von,
+  onResume,
+  onDiscard,
+}: PauseOverlayProps) {
   const [grund, setGrund] = useState<PauseGrundDraft>({
     gruende: [],
     sonstige_text: "",
@@ -56,7 +62,7 @@ export default function PauseOverlay({ von, onResume }: PauseOverlayProps) {
           <PauseGrundFields value={grund} onChange={setGrund} tone="overlay" />
         </div>
 
-        <div className="space-y-2">
+        <div className="flex flex-col items-center gap-2">
           <button
             type="button"
             disabled={missing != null}
@@ -66,6 +72,13 @@ export default function PauseOverlay({ von, onResume }: PauseOverlayProps) {
             Untersuchung fortsetzen
           </button>
           {missing ? <p className="text-sm font-semibold">{missing}</p> : null}
+          <button
+            type="button"
+            onClick={onDiscard}
+            className="rounded-xl border-2 border-white px-6 py-2 font-semibold text-white hover:bg-white/15"
+          >
+            Ich habe mich verklickt
+          </button>
         </div>
       </div>
     </div>

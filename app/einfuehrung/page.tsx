@@ -62,8 +62,7 @@ export default function EinfuehrungPage() {
           <li>
             <strong>Untersuchung starten.</strong> Sobald das Videokonsil läuft
             und Sie mit der NIHSS beginnen:{" "}
-            <strong>Untersuchung starten</strong> oder das erste NIHSS-Item
-            antippen. Danach die Fragen in der vorgegebenen Reihenfolge
+            <strong>Untersuchung starten</strong>. Danach die Fragen in der vorgegebenen Reihenfolge
             beantworten. Bei einer Unterbrechung <strong>Pause</strong>{" "}
             drücken: Die Zeit wird angehalten, bis der Grund der Pause
             angegeben und <strong>Untersuchung fortsetzen</strong> gewählt

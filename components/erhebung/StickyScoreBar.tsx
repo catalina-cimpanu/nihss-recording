@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import ExamElapsedClock from "@/components/erhebung/ExamElapsedClock";
 import FieldOptions from "@/components/erhebung/FieldOptions";
 import { HypotheticalHint } from "@/components/erhebung/HypotheticalInfo";
@@ -7,6 +8,10 @@ import { LYSE_FIELD, STROKE_FIELD, type ClickableField } from "@/lib/nihss/confi
 import { examTimes, getDecisionClocks } from "@/lib/nihss/duration";
 import { calculateGfast, calculateNihss } from "@/lib/nihss/scoring";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
+
+/** How often an undecided Stroke/Lyse row flashes extra (globals.css: decision-nudge). */
+const DECISION_NUDGE_MS = 60_000;
+const NUDGE_FLASH_MS = 1200;
 
 type StickyScoreBarProps = {
   erhebung: ErhebungRow;
@@ -52,8 +57,31 @@ export default function StickyScoreBar({
   const clocks = getDecisionClocks(erhebung);
   // Undecided rows pulse while the Untersuchung is running.
   const running = !readOnly && !paused && Boolean(erhebung.startzeit_untersuchung);
+  const anyUndecided =
+    erhebung.stroke_status === "nicht entschieden" ||
+    erhebung.lyse_status === "nicht entschieden";
+  const [nudge, setNudge] = useState(false);
+
+  useEffect(() => {
+    if (!running || !anyUndecided) {
+      return;
+    }
+    let flashTimer: number | undefined;
+    const interval = window.setInterval(() => {
+      setNudge(true);
+      flashTimer = window.setTimeout(() => setNudge(false), NUDGE_FLASH_MS);
+    }, DECISION_NUDGE_MS);
+    return () => {
+      window.clearInterval(interval);
+      window.clearTimeout(flashTimer);
+      setNudge(false);
+    };
+  }, [running, anyUndecided]);
+
   const pendingClass = (status: string) =>
-    running && status === "nicht entschieden" ? "decision-pending" : "";
+    running && status === "nicht entschieden"
+      ? `decision-pending${nudge ? " decision-nudge" : ""}`
+      : "";
   const { startAt, endAt } = examTimes(erhebung);
 
   return (

@@ -491,6 +491,43 @@ export function applyPauseToggle(args: {
   };
 }
 
+/**
+ * Removes a running pause that was started by mistake, so its time counts as
+ * normal Untersuchung time again.
+ */
+export function applyPauseDiscard(args: {
+  erhebung: ErhebungRow;
+  now: Date;
+}): { erhebung: ErhebungRow; ereignisse: EreignisInsert[] } {
+  if (!isPaused(args.erhebung)) {
+    return { erhebung: args.erhebung, ereignisse: [] };
+  }
+
+  const label = "Pause verworfen (verklickt)";
+  const next: ErhebungRow = {
+    ...args.erhebung,
+    pausen: args.erhebung.pausen.slice(0, -1),
+    timeline: appendTimelineLine(
+      args.erhebung.timeline,
+      formatTimelineLine(args.now, "Untersuchung", label),
+    ),
+  };
+
+  return {
+    erhebung: next,
+    ereignisse: [
+      {
+        erhebung_id: next.id,
+        feld_key: "pause_discard",
+        feld_label: "Untersuchung",
+        wert_label: label,
+        wert_score: null,
+        ereignis_typ: "lifecycle",
+      },
+    ],
+  };
+}
+
 export function pauseLabel(pause: Pause, index: number): string {
   const bis = pause.bis ? formatBerlinTime(new Date(pause.bis)) : "läuft";
   return `Pause ${index + 1} (${formatBerlinTime(new Date(pause.von))}–${bis})`;
