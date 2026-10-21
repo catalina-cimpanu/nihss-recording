@@ -45,7 +45,8 @@ export type NihssOption = {
   value: string;
   label: string;
   score: number | null;
-  special?: "UN" | "ignored";
+  /** "undecided": the starting value, drawn open instead of as an answer. */
+  special?: "UN" | "ignored" | "undecided";
   color: ScoreColor;
 };
 
@@ -513,7 +514,7 @@ export const STROKE_FIELD: ClickableField = {
   contributesToNihss: false,
   contributesToGfast: false,
   options: [
-    { value: "nicht entschieden", label: "nicht entschieden", score: null, color: "stroke" },
+    { value: "nicht entschieden", label: "nicht entschieden", score: null, color: "stroke", special: "undecided" },
     { value: "Ja", label: "Stroke Ja", score: null, color: "stroke" },
     { value: "Kein Stroke", label: "Kein Stroke", score: null, color: "stroke" },
   ],
@@ -528,7 +529,7 @@ export const LYSE_FIELD: ClickableField = {
   contributesToNihss: false,
   contributesToGfast: false,
   options: [
-    { value: "nicht entschieden", label: "nicht entschieden", score: null, color: "lyse" },
+    { value: "nicht entschieden", label: "nicht entschieden", score: null, color: "lyse", special: "undecided" },
     { value: "Ja", label: "Lyse Ja", score: null, color: "lyse" },
     { value: "Keine Lyse", label: "Keine Lyse", score: null, color: "lyse" },
   ],

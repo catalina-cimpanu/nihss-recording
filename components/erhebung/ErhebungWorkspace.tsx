@@ -531,6 +531,7 @@ export default function ErhebungWorkspace({
         <StickyScoreBar
           erhebung={erhebung}
           readOnly={readOnly}
+          paused={paused}
           incompleteCount={incompleteCount}
           onSelect={handleSelect}
         />

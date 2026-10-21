@@ -2,6 +2,7 @@
 
 import ExamElapsedClock from "@/components/erhebung/ExamElapsedClock";
 import FieldOptions from "@/components/erhebung/FieldOptions";
+import { HypotheticalHint } from "@/components/erhebung/HypotheticalInfo";
 import { LYSE_FIELD, STROKE_FIELD, type ClickableField } from "@/lib/nihss/config";
 import { examTimes, getDecisionClocks } from "@/lib/nihss/duration";
 import { calculateGfast, calculateNihss } from "@/lib/nihss/scoring";
@@ -10,6 +11,7 @@ import type { ErhebungRow } from "@/lib/supabase/database.types";
 type StickyScoreBarProps = {
   erhebung: ErhebungRow;
   readOnly: boolean;
+  paused: boolean;
   incompleteCount: number;
   onSelect: (field: ClickableField, value: string) => void;
 };
@@ -43,10 +45,15 @@ function DurationValue({
 export default function StickyScoreBar({
   erhebung,
   readOnly,
+  paused,
   incompleteCount,
   onSelect,
 }: StickyScoreBarProps) {
   const clocks = getDecisionClocks(erhebung);
+  // Undecided rows pulse while the Untersuchung is running.
+  const running = !readOnly && !paused && Boolean(erhebung.startzeit_untersuchung);
+  const pendingClass = (status: string) =>
+    running && status === "nicht entschieden" ? "decision-pending" : "";
   const { startAt, endAt } = examTimes(erhebung);
 
   return (
@@ -109,8 +116,11 @@ export default function StickyScoreBar({
             ) : null}
           </div>
         </div>
+        <HypotheticalHint />
         <div className="flex flex-col gap-1.5 md:grid md:grid-cols-2 md:gap-2">
-          <div className="flex items-center gap-1.5 md:block">
+          <div
+            className={`flex items-center gap-1.5 md:block ${pendingClass(erhebung.stroke_status)}`}
+          >
             <p className="w-11 shrink-0 text-[0.7rem] font-semibold leading-tight text-tempis-blue-darker md:mb-1 md:w-auto md:text-xs">
               <span className="md:hidden">Stroke</span>
               <span className="hidden md:inline">Stroke</span>
@@ -126,7 +136,9 @@ export default function StickyScoreBar({
               />
             </div>
           </div>
-          <div className="flex items-center gap-1.5 md:block">
+          <div
+            className={`flex items-center gap-1.5 md:block ${pendingClass(erhebung.lyse_status)}`}
+          >
             <p className="w-11 shrink-0 text-[0.7rem] font-semibold leading-tight text-tempis-signal md:mb-1 md:w-auto md:text-xs">
               <span className="md:hidden">Lyse</span>
               <span className="hidden md:inline">Lyse</span>

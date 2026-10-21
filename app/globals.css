@@ -61,6 +61,29 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Ring around an undecided Stroke/Lyse row during the Untersuchung (tempis-gold). */
+@keyframes decision-pending {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgb(222 186 10 / 0.9);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgb(222 186 10 / 0.3);
+  }
+}
+
+.decision-pending {
+  border-radius: 0.6rem;
+  animation: decision-pending 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .decision-pending {
+    animation: none;
+    box-shadow: 0 0 0 3px rgb(222 186 10 / 0.9);
+  }
+}
+
 @keyframes toast-timer {
   from {
     transform: scaleX(1);

@@ -16,9 +16,11 @@ export default function OptionButton({
   disabled,
   onSelect,
 }: OptionButtonProps) {
-  const colorClass = selected
-    ? styles[`${option.color}Selected` as keyof typeof styles]
-    : styles[option.color as keyof typeof styles];
+  const colorClass = !selected
+    ? styles[option.color as keyof typeof styles]
+    : option.special === "undecided"
+      ? styles.undecidedSelected
+      : styles[`${option.color}Selected` as keyof typeof styles];
 
   return (
     <button
