@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   emptyFollowupValues,
-  KI_TIMING_NACH,
   type FollowupValues,
 } from "@/lib/nihss/followup";
 import {
@@ -53,8 +52,6 @@ describe("isFollowupIncomplete", () => {
         lyse_kontraindikation_vor_untersuchung: "Nein",
         tempis_stroke_verdacht: "Ja",
         tempis_lyse_empfehlung: "Nein",
-        lyse_kontraindikation_nach_untersuchung: "Nein",
-        lyse_ki_keine: true,
         umstaende_keine: true,
         sonstige_anmerkungen_keine: true,
       }),
@@ -62,22 +59,26 @@ describe("isFollowupIncomplete", () => {
     );
   });
 
-  it("requires beeinflusst when a nach-KI is selected", () => {
-    const withNach: FollowupValues = {
+  it("requires a KI reason when vor is Ja, then beeinflusst", () => {
+    const vorJa: FollowupValues = {
       ...emptyFollowupValues(),
       solo_patienten_id: "12",
-      lyse_kontraindikation_vor_untersuchung: "Nein",
+      lyse_kontraindikation_vor_untersuchung: "Ja",
       tempis_stroke_verdacht: "Ja",
       tempis_lyse_empfehlung: "Nein",
-      lyse_ki_oak: true,
-      lyse_ki_oak_timing: KI_TIMING_NACH,
       umstaende_keine: true,
       sonstige_anmerkungen_keine: true,
     };
-    assert.equal(isFollowupIncomplete(withNach), true);
+    assert.deepEqual(missingFollowupLabels(vorJa), [
+      "Lyse-Kontraindikation vor Untersuchung",
+    ]);
+    assert.deepEqual(missingFollowupLabels({ ...vorJa, lyse_ki_oak: true }), [
+      "Kontraindikation beeinflusst Lyse",
+    ]);
     assert.equal(
       isFollowupIncomplete({
-        ...withNach,
+        ...vorJa,
+        lyse_ki_oak: true,
         lyse_kontraindikation_beeinflusst: "Nein",
       }),
       false,

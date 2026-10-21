@@ -57,7 +57,6 @@ export default function EinfuehrungPage() {
           <li>
             <strong>Erhebung erstellen.</strong> Unter Neue Erhebung wählen Sie
             Test oder Echter Patient. Optional Solo-Patienten-ID (nur Ziffern)
-            und eine bekannte Lyse-Kontraindikation vor der Untersuchung
             angeben oder überspringen.
           </li>
           <li>
@@ -83,10 +82,10 @@ export default function EinfuehrungPage() {
           </li>
           <li>
             <strong>Angaben zum Konsil.</strong> TEMPiS-Verdacht und
-            -Empfehlung, Kontraindikationen, Umstände. Nach der Untersuchung
-            können Sie bei Kontraindikationen <strong>Nein</strong> wählen,
-            wenn nichts Weiteres bekannt geworden ist, oder <strong>Ja</strong>
-            , um die Gründe auszuwählen.{" "}
+            -Empfehlung, Kontraindikationen, Umstände. Bei den
+            Kontraindikationen geben Sie an, ob vor der Untersuchung bereits
+            welche bekannt waren: <strong>Nein</strong>, oder{" "}
+            <strong>Ja</strong>, um die Gründe auszuwählen.{" "}
             <strong>Speichern</strong> lässt die Felder auf der
             Erhebungsseite änderbar. <strong>Abschließen</strong> sperrt sie.
             Danach öffnet{" "}

@@ -97,8 +97,6 @@ export default function NewErhebungForm() {
       const result = applyFollowupChange(created, patch);
       if (
         result.erhebung.solo_patienten_id !== created.solo_patienten_id ||
-        result.erhebung.lyse_kontraindikation_vor_untersuchung !==
-          created.lyse_kontraindikation_vor_untersuchung ||
         result.ereignisse.length > 0
       ) {
         await persistErhebungAndEreignisse(result.erhebung, result.ereignisse);

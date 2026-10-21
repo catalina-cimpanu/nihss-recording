@@ -1,11 +1,9 @@
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 import {
   anmerkungenAnswer,
-  hasNachKi,
+  hasKi,
   hasUmstandOption,
-  isLyseKiVorMissing,
   isSoloPatientenIdMissing,
-  nachKiAnswer,
   umstaendeAnswer,
   type FollowupValues,
 } from "@/lib/nihss/followup";
@@ -40,7 +38,7 @@ export function missingFollowupLabels(values: FollowupValues): string[] {
   if (isSoloPatientenIdMissing(values)) {
     missing.push("Solo-Patienten-ID");
   }
-  if (isLyseKiVorMissing(values)) {
+  if (values.lyse_kontraindikation_vor_untersuchung !== "Nein" && !hasKi(values)) {
     missing.push("Lyse-Kontraindikation vor Untersuchung");
   }
   if (values.tempis_stroke_verdacht == null) {
@@ -49,7 +47,7 @@ export function missingFollowupLabels(values: FollowupValues): string[] {
   if (values.tempis_lyse_empfehlung == null) {
     missing.push("TEMPiS Lyse-Empfehlung");
   }
-  if (hasNachKi(values) && values.lyse_kontraindikation_beeinflusst == null) {
+  if (hasKi(values) && values.lyse_kontraindikation_beeinflusst == null) {
     missing.push("Kontraindikation beeinflusst Lyse");
   }
   if (
@@ -58,9 +56,6 @@ export function missingFollowupLabels(values: FollowupValues): string[] {
       values.lyse_kontraindikation_beeinflusst_text === "")
   ) {
     missing.push("Beschreibung zur Lyse-Beeinflussung");
-  }
-  if (nachKiAnswer(values) !== "Nein" && !hasNachKi(values)) {
-    missing.push("Lyse-Kontraindikation nach Untersuchung");
   }
   if (umstaendeAnswer(values) !== "Nein" && !hasUmstandOption(values)) {
     missing.push("Umstände der Untersuchung");

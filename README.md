@@ -5,7 +5,7 @@ Next.js app for timed NIHSS documentation during a TEMPiS videoconsult. No patie
 ## Run locally
 
 1. Copy `.env.local.example` to `.env.local` and set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-2. Apply SQL in `supabase/migrations/` to the Supabase project, in filename order (`001` … `016`), if the database is new or missing columns. Tick files in `supabase/migrations/README.md` after they run. `012` drops unused duration columns from `002`; the app computes durations in TypeScript, not from those columns. `013` adds Ja/Nein for Umstände and Sonstige Anmerkungen. `014` keeps which Kontraindikationen were selected before the Untersuchung after a later change. `015` adds the symptom checklist, with a frozen before-exam choice and a current choice. `016` adds Sonstiges with a short free-text note.
+2. Apply SQL in `supabase/migrations/` to the Supabase project, in filename order (`001` … `017`), if the database is new or missing columns. Tick files in `supabase/migrations/README.md` after they run. `012` drops unused duration columns from `002`; the app computes durations in TypeScript, not from those columns. `013` adds Ja/Nein for Umstände and Sonstige Anmerkungen. `015` adds the symptom checklist, with a frozen before-exam choice and a current choice. `016` adds Sonstiges with a short free-text note. `017` asks Kontraindikationen only after the Untersuchung ("vor der Untersuchung bereits bekannt?") and drops the vor/nach timing columns.
 3. Install and start:
 
 ```bash

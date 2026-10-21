@@ -96,39 +96,10 @@ export type KontraindikationKey =
   (typeof KONTRAINDIKATION_OPTIONS)[number]["key"];
 
 export type KiFlagName = `lyse_ki_${KontraindikationKey}`;
-export type KiTimingName = `lyse_ki_${KontraindikationKey}_timing`;
-export type KiVorName = `lyse_ki_${KontraindikationKey}_vor`;
 export type KiTextName = "lyse_ki_sonstige_text";
 
-export const KI_TIMING_VOR = "vor Untersuchung";
-export const KI_TIMING_NACH = "nach Untersuchung";
-export type KiTiming = typeof KI_TIMING_VOR | typeof KI_TIMING_NACH;
-
-export function isKiTiming(value: unknown): value is KiTiming {
-  return value === KI_TIMING_VOR || value === KI_TIMING_NACH;
-}
-
-export function isRetractedKi(
-  selected: boolean,
-  timing: KiTiming | null | undefined,
-): boolean {
-  return !selected && timing === KI_TIMING_VOR;
-}
-
-export function hasNachKi(values: FollowupValues): boolean {
-  return kontraindikationFields().some(
-    (item) => Boolean(values[item.flag]) && values[item.timing] === KI_TIMING_NACH,
-  );
-}
-
-export function nachKiAnswer(values: FollowupValues): JaNein | null {
-  if (hasNachKi(values) || values.lyse_kontraindikation_nach_untersuchung === "Ja") {
-    return "Ja";
-  }
-  if (values.lyse_ki_keine || values.lyse_kontraindikation_nach_untersuchung === "Nein") {
-    return "Nein";
-  }
-  return null;
+export function hasKi(values: FollowupValues): boolean {
+  return kontraindikationFields().some((item) => Boolean(values[item.flag]));
 }
 
 export function hasUmstandOption(values: FollowupValues): boolean {
@@ -165,21 +136,11 @@ export function kiFlag(key: KontraindikationKey): KiFlagName {
   return `lyse_ki_${key}`;
 }
 
-export function kiTiming(key: KontraindikationKey): KiTimingName {
-  return `lyse_ki_${key}_timing`;
-}
-
-export function kiVor(key: KontraindikationKey): KiVorName {
-  return `lyse_ki_${key}_vor`;
-}
-
 export function kontraindikationFields() {
   return KONTRAINDIKATION_OPTIONS.map((item) => ({
     key: item.key,
     label: item.label,
     flag: kiFlag(item.key),
-    timing: kiTiming(item.key),
-    selectedBefore: kiVor(item.key),
     text: item.key === "sonstige" ? ("lyse_ki_sonstige_text" as const) : null,
   }));
 }
@@ -196,10 +157,6 @@ export const JA_NEIN_FOLLOWUP_FIELDS = [
   {
     key: "lyse_kontraindikation_vor_untersuchung",
     label: "Lyse-Kontraindikation vor Untersuchung",
-  },
-  {
-    key: "lyse_kontraindikation_nach_untersuchung",
-    label: "Lyse-Kontraindikation nach Untersuchung",
   },
   {
     key: "lyse_kontraindikation_beeinflusst",
@@ -221,15 +178,10 @@ export type FollowupValues = Pick<
   | "tempis_stroke_verdacht"
   | "tempis_lyse_empfehlung"
   | "lyse_kontraindikation_vor_untersuchung"
-  | "lyse_kontraindikation_nach_untersuchung"
-  | "lyse_kontraindikation_nach_welche"
   | "lyse_kontraindikation_beeinflusst"
   | "lyse_kontraindikation_beeinflusst_text"
   | KiFlagName
-  | KiTimingName
-  | KiVorName
   | KiTextName
-  | "lyse_ki_keine"
   | SymptomFlagName
   | SymptomVorName
   | "symptom_sonstiges_text"
@@ -255,12 +207,9 @@ export function emptyFollowupValues(): FollowupValues {
     tempis_stroke_verdacht: null,
     tempis_lyse_empfehlung: null,
     lyse_kontraindikation_vor_untersuchung: null,
-    lyse_kontraindikation_nach_untersuchung: null,
-    lyse_kontraindikation_nach_welche: null,
     lyse_kontraindikation_beeinflusst: null,
     lyse_kontraindikation_beeinflusst_text: null,
     ...emptyKiColumns(),
-    lyse_ki_keine: false,
     symptom_schwindel: false,
     symptom_schwindel_vor: false,
     symptom_kopfschmerzen: false,
@@ -328,96 +277,14 @@ export function clipShortText(value: string): string {
 }
 
 function emptyKiColumns(): Record<KiFlagName, boolean> &
-  Record<KiTimingName, KiTiming | null> &
-  Record<KiVorName, boolean> &
   Record<KiTextName, string | null> {
   const next = {} as Record<KiFlagName, boolean> &
-    Record<KiTimingName, KiTiming | null> &
-    Record<KiVorName, boolean> &
     Record<KiTextName, string | null>;
   for (const item of KONTRAINDIKATION_OPTIONS) {
     next[kiFlag(item.key)] = false;
-    next[kiTiming(item.key)] = null;
-    next[kiVor(item.key)] = false;
   }
   next.lyse_ki_sonstige_text = null;
   return next;
-}
-
-function keepVorSelection(previous: ErhebungRow, next: ErhebungRow) {
-  for (const item of kontraindikationFields()) {
-    const kept =
-      Boolean(previous[item.selectedBefore]) ||
-      previous[item.timing] === KI_TIMING_VOR ||
-      (Boolean(next[item.flag]) && next[item.timing] === KI_TIMING_VOR);
-    Object.assign(next, { [item.selectedBefore]: kept });
-  }
-}
-
-function clearNachKiReasons(next: ErhebungRow) {
-  for (const item of kontraindikationFields()) {
-    if (next[item.timing] !== KI_TIMING_NACH) {
-      continue;
-    }
-    Object.assign(next, { [item.flag]: false, [item.timing]: null });
-    if (item.text) {
-      Object.assign(next, { [item.text]: null });
-    }
-  }
-}
-
-function clearVorKiReasons(next: ErhebungRow) {
-  for (const item of kontraindikationFields()) {
-    if (next[item.timing] === KI_TIMING_NACH) {
-      continue;
-    }
-    Object.assign(next, { [item.flag]: false, [item.timing]: null });
-    if (item.text) {
-      Object.assign(next, { [item.text]: null });
-    }
-  }
-}
-
-function applyKiTimingRules(
-  previous: ErhebungRow,
-  next: ErhebungRow,
-  patch: Partial<ErhebungRow>,
-) {
-  for (const item of kontraindikationFields()) {
-    const selected = Boolean(next[item.flag]);
-    const requested = next[item.timing];
-    if (!selected) {
-      const alreadyRetracted = isRetractedKi(
-        Boolean(previous[item.flag]),
-        previous[item.timing],
-      );
-      const explicitRetract =
-        item.timing in patch &&
-        patch[item.timing] === KI_TIMING_VOR &&
-        previous[item.timing] === KI_TIMING_VOR;
-      const explicitClear =
-        item.timing in patch && patch[item.timing] !== KI_TIMING_VOR;
-      Object.assign(next, {
-        [item.timing]:
-          (alreadyRetracted && !explicitClear) || explicitRetract
-            ? KI_TIMING_VOR
-            : null,
-      });
-      continue;
-    }
-    const previousTiming = previous[item.timing];
-    if (previousTiming == null) {
-      Object.assign(next, {
-        [item.timing]: isKiTiming(requested) ? requested : KI_TIMING_VOR,
-      });
-      continue;
-    }
-    if (previousTiming === KI_TIMING_VOR && requested === KI_TIMING_NACH) {
-      Object.assign(next, { [item.timing]: KI_TIMING_NACH });
-      continue;
-    }
-    Object.assign(next, { [item.timing]: previousTiming });
-  }
 }
 
 function clipKiSonstige(next: ErhebungRow) {
@@ -440,50 +307,18 @@ export function applyFollowupPatch(
     next.solo_patienten_id = digitsOnly(String(patch.solo_patienten_id)) || null;
   }
 
-  if (
-    "lyse_kontraindikation_vor_untersuchung" in patch &&
-    next.lyse_kontraindikation_vor_untersuchung !== "Ja"
-  ) {
-    clearVorKiReasons(next);
-  }
-  applyKiTimingRules(erhebung, next, patch);
-  if (
-    patch.lyse_kontraindikation_nach_untersuchung === "Nein" ||
-    patch.lyse_ki_keine === true
-  ) {
-    next.lyse_ki_keine = true;
-    next.lyse_kontraindikation_nach_untersuchung = "Nein";
-    clearNachKiReasons(next);
-    applyKiTimingRules(erhebung, next, patch);
-  }
-  if (patch.lyse_kontraindikation_nach_untersuchung === "Ja") {
-    next.lyse_ki_keine = false;
-    next.lyse_kontraindikation_nach_untersuchung = "Ja";
+  if (next.lyse_kontraindikation_vor_untersuchung !== "Ja") {
+    Object.assign(next, emptyKiColumns());
   }
   clipKiSonstige(next);
-  keepVorSelection(erhebung, next);
-  if (hasNachKi(next)) {
-    next.lyse_ki_keine = false;
-    next.lyse_kontraindikation_nach_untersuchung = "Ja";
+  if (!hasKi(next)) {
+    next.lyse_kontraindikation_beeinflusst = null;
   }
-
-  if (typeof next.lyse_kontraindikation_nach_welche === "string") {
-    next.lyse_kontraindikation_nach_welche =
-      clipShortText(next.lyse_kontraindikation_nach_welche) || null;
-  }
-  if (typeof next.lyse_kontraindikation_beeinflusst_text === "string") {
+  if (next.lyse_kontraindikation_beeinflusst !== "Ja") {
+    next.lyse_kontraindikation_beeinflusst_text = null;
+  } else if (typeof next.lyse_kontraindikation_beeinflusst_text === "string") {
     next.lyse_kontraindikation_beeinflusst_text =
       clipShortText(next.lyse_kontraindikation_beeinflusst_text) || null;
-  }
-
-  if (next.lyse_kontraindikation_nach_untersuchung !== "Ja") {
-    next.lyse_kontraindikation_nach_welche = null;
-    next.lyse_kontraindikation_beeinflusst = null;
-    next.lyse_kontraindikation_beeinflusst_text = null;
-  } else {
-    if (next.lyse_kontraindikation_beeinflusst !== "Ja") {
-      next.lyse_kontraindikation_beeinflusst_text = null;
-    }
   }
 
   if (patch.umstaende_erschwert === "Nein" || patch.umstaende_keine === true) {
@@ -572,9 +407,7 @@ export function followupEreignisseFromPatch(
   const events: EreignisInsert[] = [];
 
   for (const field of JA_NEIN_FOLLOWUP_FIELDS) {
-    const derivedJaNein =
-      field.key === "lyse_kontraindikation_nach_untersuchung" ||
-      field.key === "umstaende_erschwert";
+    const derivedJaNein = field.key === "umstaende_erschwert";
     if (!derivedJaNein && !(field.key in patch)) {
       continue;
     }
@@ -618,31 +451,6 @@ export function followupEreignisseFromPatch(
         ),
       );
     }
-    if (item.timing in patch && next[item.timing] !== previous[item.timing]) {
-      const timing = next[item.timing];
-      events.push(
-        followupEreignis(
-          next,
-          item.timing,
-          `${item.label} Zeitpunkt`,
-          timing ?? "keine",
-        ),
-      );
-    }
-  }
-
-  if (
-    "lyse_ki_keine" in patch &&
-    next.lyse_ki_keine !== previous.lyse_ki_keine
-  ) {
-    events.push(
-      followupEreignis(
-        next,
-        "lyse_ki_keine",
-        "Lyse-Kontraindikation nach Untersuchung",
-        next.lyse_ki_keine ? "Keine" : "Nein",
-      ),
-    );
   }
 
   if (
@@ -718,10 +526,6 @@ export function isSoloPatientenIdMissing(values: FollowupValues): boolean {
   return values.solo_patienten_id == null || values.solo_patienten_id === "";
 }
 
-export function isLyseKiVorMissing(values: FollowupValues): boolean {
-  return values.lyse_kontraindikation_vor_untersuchung == null;
-}
-
 export function needsPreExamFollowup(erhebung: FollowupValues): boolean {
   return isSoloPatientenIdMissing(erhebung);
 }
@@ -731,8 +535,6 @@ export function preExamFollowupPatch(
 ): Partial<FollowupValues> {
   const patch: Partial<FollowupValues> = {
     solo_patienten_id: digitsOnly(values.solo_patienten_id ?? "") || null,
-    lyse_kontraindikation_vor_untersuchung:
-      values.lyse_kontraindikation_vor_untersuchung,
   };
 
   for (const item of SYMPTOME) {
@@ -751,22 +553,6 @@ export function preExamFollowupPatch(
       [item.text]: clipped,
       [item.textBefore]: clipped,
     });
-  }
-
-  const vorJa = values.lyse_kontraindikation_vor_untersuchung === "Ja";
-  for (const item of kontraindikationFields()) {
-    const selected = vorJa && Boolean(values[item.flag]);
-    Object.assign(patch, {
-      [item.flag]: selected,
-      [item.timing]: selected ? (values[item.timing] ?? KI_TIMING_VOR) : null,
-    });
-    if (item.text) {
-      const text = values[item.text];
-      Object.assign(patch, {
-        [item.text]:
-          selected && typeof text === "string" ? clipShortText(text) || null : null,
-      });
-    }
   }
 
   return patch;
