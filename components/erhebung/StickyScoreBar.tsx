@@ -3,7 +3,7 @@
 import ExamElapsedClock from "@/components/erhebung/ExamElapsedClock";
 import FieldOptions from "@/components/erhebung/FieldOptions";
 import { LYSE_FIELD, STROKE_FIELD, type ClickableField } from "@/lib/nihss/config";
-import { getDecisionClocks } from "@/lib/nihss/duration";
+import { examTimes, getDecisionClocks } from "@/lib/nihss/duration";
 import { calculateGfast, calculateNihss } from "@/lib/nihss/scoring";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
@@ -44,6 +44,7 @@ export default function StickyScoreBar({
   onSelect,
 }: StickyScoreBarProps) {
   const clocks = getDecisionClocks(erhebung);
+  const { startAt, endAt } = examTimes(erhebung);
 
   return (
     <div className="border-b border-border bg-surface/95 px-2 pt-1.5 pb-2.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/90 md:px-3 md:py-2">
@@ -56,12 +57,12 @@ export default function StickyScoreBar({
               <span className="mx-2 text-muted">·</span>
               G-FAST{" "}
               <span className="tabular-nums">{calculateGfast(erhebung)}</span>
-              {erhebung.startzeit_untersuchung ? (
+              {startAt ? (
                 <>
                   <span className="mx-2 text-muted">·</span>
                   <ExamElapsedClock
-                    startAt={erhebung.startzeit_untersuchung}
-                    endAt={erhebung.endzeit_untersuchung}
+                    startAt={startAt}
+                    endAt={endAt}
                     className="tabular-nums"
                     title="Untersuchungsdauer"
                   />

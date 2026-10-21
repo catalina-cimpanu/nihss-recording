@@ -11,7 +11,18 @@ export type DurationInput = Pick<
   | "lyse_initial_at"
   | "lyse_last_at"
   | "stroke_lyse_gleichzeitig"
->;
+> &
+  Partial<
+    Pick<
+      ErhebungRow,
+      | "startzeit_korrigiert"
+      | "endzeit_korrigiert"
+      | "stroke_korrigiert_at"
+      | "lyse_korrigiert_at"
+      | "stroke_status_korrigiert"
+      | "lyse_status_korrigiert"
+    >
+  >;
 
 export type DecisionDurations = {
   strokeAt: string | null;
@@ -108,17 +119,30 @@ function isLyseDecided(status: ErhebungRow["lyse_status"]): boolean {
   return status === "Ja" || status === "Keine Lyse";
 }
 
+/** Start/end of the Untersuchung, using a manual correction when set. */
+export function examTimes(row: DurationInput): {
+  startAt: string | null;
+  endAt: string | null;
+} {
+  return {
+    startAt: row.startzeit_korrigiert ?? row.startzeit_untersuchung,
+    endAt: row.endzeit_korrigiert ?? row.endzeit_untersuchung,
+  };
+}
+
 function decisionTimes(row: DurationInput): {
   strokeAt: string | null;
   lyseAt: string | null;
 } {
   return {
-    strokeAt: isStrokeDecided(row.stroke_status)
-      ? row.stroke_last_at ?? row.stroke_initial_at
-      : null,
-    lyseAt: isLyseDecided(row.lyse_status)
-      ? row.lyse_last_at ?? row.lyse_initial_at
-      : null,
+    strokeAt:
+      isStrokeDecided(row.stroke_status) || row.stroke_status_korrigiert
+        ? row.stroke_korrigiert_at ?? row.stroke_last_at ?? row.stroke_initial_at
+        : null,
+    lyseAt:
+      isLyseDecided(row.lyse_status) || row.lyse_status_korrigiert
+        ? row.lyse_korrigiert_at ?? row.lyse_last_at ?? row.lyse_initial_at
+        : null,
   };
 }
 
@@ -131,8 +155,9 @@ export function isLyseBeforeStroke(row: DurationInput): boolean {
 
 export function getDecisionDurations(row: DurationInput): DecisionDurations {
   const { strokeAt, lyseAt } = decisionTimes(row);
-  const startMs = parseTimestamp(row.startzeit_untersuchung);
-  const endMs = parseTimestamp(row.endzeit_untersuchung);
+  const { startAt, endAt } = examTimes(row);
+  const startMs = parseTimestamp(startAt);
+  const endMs = parseTimestamp(endAt);
   const strokeMs = parseTimestamp(strokeAt);
   const lyseMs = parseTimestamp(lyseAt);
   const inverted = isLyseBeforeStroke(row);
@@ -152,8 +177,8 @@ export function getDecisionDurations(row: DurationInput): DecisionDurations {
 
 export function getDecisionClocks(row: DurationInput): DecisionClocks {
   const { strokeAt, lyseAt } = getDecisionDurations(row);
-  const startAt = row.startzeit_untersuchung;
-  const examEnded = Boolean(row.endzeit_untersuchung);
+  const { startAt, endAt } = examTimes(row);
+  const examEnded = Boolean(endAt);
   const inverted = isLyseBeforeStroke(row);
 
   return {

@@ -8,6 +8,7 @@ import ExamViewToggle from "@/components/erhebung/ExamViewToggle";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
 import ScrollToTopButton from "@/components/erhebung/ScrollToTopButton";
 import StickyScoreBar from "@/components/erhebung/StickyScoreBar";
+import TimeCorrectionFields from "@/components/erhebung/TimeCorrectionFields";
 import { useExamViewMode } from "@/components/erhebung/useExamViewMode";
 import { useStickyOptionHeight } from "@/components/erhebung/useStickyOptionHeight";
 import WarningToasts, {
@@ -35,8 +36,13 @@ import {
 import {
   AUTO_CLOSE_AFTER_MS,
   autoCloseStopAt,
+  examTimes,
   shouldAutoCloseExam,
 } from "@/lib/nihss/duration";
+import {
+  applyTimeCorrection,
+  type TimeCorrectionPatch,
+} from "@/lib/nihss/time-correction";
 import {
   applyFollowupChange,
   emptyFollowupValues,
@@ -105,6 +111,7 @@ export default function ErhebungWorkspace({
   }, [restoredLatest]);
 
   const followupClosed = erhebung.followup_status === "abgeschlossen";
+  const { startAt: examStartAt, endAt: examEndAt } = examTimes(erhebung);
   const readOnly = erhebung.untersuchung_status === "abgeschlossen";
   const missingFields = useMemo(
     () => getMissingNihssFields(erhebung),
@@ -431,6 +438,23 @@ export default function ErhebungWorkspace({
     proceedToFollowup();
   }
 
+  async function saveTimeCorrection(
+    patch: TimeCorrectionPatch,
+  ): Promise<string | null> {
+    const result = applyTimeCorrection({
+      erhebung: erhebungRef.current,
+      patch,
+      now: new Date(),
+    });
+    if (result.error !== null) {
+      return result.error;
+    }
+    if (result.ereignisse.length > 0) {
+      await persist(result.erhebung, result.ereignisse);
+    }
+    return null;
+  }
+
   async function correctKonsil() {
     const result = applyKonsilCorrection({
       erhebung: erhebungRef.current,
@@ -540,13 +564,12 @@ export default function ErhebungWorkspace({
           </div>
         ) : null}
 
-        {erhebung.startzeit_untersuchung ? (
+        {examStartAt ? (
           <p className="rounded-lg bg-tempis-sage/40 px-3 py-2 text-sm font-medium">
-            Untersuchung um{" "}
-            {formatBerlinTime(new Date(erhebung.startzeit_untersuchung))}{" "}
-            gestartet.
-            {erhebung.endzeit_untersuchung
-              ? ` Untersuchung um ${formatBerlinTime(new Date(erhebung.endzeit_untersuchung))} beendet.`
+            Untersuchung um {formatBerlinTime(new Date(examStartAt))}{" "}
+            gestartet{erhebung.startzeit_korrigiert ? " (korrigiert)" : ""}.
+            {examEndAt
+              ? ` Untersuchung um ${formatBerlinTime(new Date(examEndAt))} beendet${erhebung.endzeit_korrigiert ? " (korrigiert)" : ""}.`
               : ""}
           </p>
         ) : null}
@@ -617,6 +640,14 @@ export default function ErhebungWorkspace({
 
         {readOnly ? (
           <>
+            <h2 className="text-2xl font-bold">Zeiten</h2>
+            <section className="rounded-xl border border-border bg-surface p-3">
+              <TimeCorrectionFields
+                erhebung={erhebung}
+                onSave={saveTimeCorrection}
+              />
+            </section>
+
             <h2 className="text-2xl font-bold">Angaben zum Konsil</h2>
             <section className="space-y-3 rounded-xl border border-border bg-surface p-3">
               <p className="text-sm text-muted">

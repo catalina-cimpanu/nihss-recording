@@ -24,3 +24,5 @@ Durations (`dauer_*`, `stroke_entscheidung_at`, `lyse_entscheidung_at`) are **no
 | `016_symptom_sonstiges.sql` | Symptom Sonstiges with free text | |
 | `017_lyse_ki_only_vor.sql` | Kontraindikation: only "vor Untersuchung bekannt", drop timing columns | |
 | `018_umstaende_weitere.sql` | Umstände: Ablenkung, technische Probleme, Hörminderung | |
+| `019_zeit_korrekturen.sql` | Manual time corrections and decisions entered afterwards | |
+| `020_status_korrigiert.sql` | Rename `*_nachgetragen` to `*_status_korrigiert` (also corrects clicked decisions) | |

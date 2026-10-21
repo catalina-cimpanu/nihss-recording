@@ -145,6 +145,8 @@ function clocksFor(row: ErhebungListItem) {
     lyse_initial_at: row.lyse_entscheidung_at,
     lyse_last_at: row.lyse_entscheidung_at,
     stroke_lyse_gleichzeitig: row.stroke_lyse_gleichzeitig,
+    stroke_status_korrigiert: row.stroke_status_korrigiert,
+    lyse_status_korrigiert: row.lyse_status_korrigiert,
   });
 }
 

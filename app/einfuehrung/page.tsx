@@ -86,6 +86,11 @@ export default function EinfuehrungPage() {
             Kontraindikationen geben Sie an, ob vor der Untersuchung bereits
             welche bekannt waren: <strong>Nein</strong>, oder{" "}
             <strong>Ja</strong>, um die Gründe auszuwählen.{" "}
+            Die <strong>Zeiten</strong> (Start, Ende, Stroke, Lyse) sind mit
+            Ende der Untersuchung abgeschlossen. Über{" "}
+            <strong>Zeiten nachträglich korrigieren</strong> lassen sich die
+            Uhrzeiten und die Stroke-/Lyse-Entscheidungen korrigieren oder
+            nachtragen; die geklickten Werte bleiben gespeichert.{" "}
             <strong>Speichern</strong> lässt die Felder auf der
             Erhebungsseite änderbar. <strong>Abschließen</strong> sperrt sie.
             Danach öffnet{" "}

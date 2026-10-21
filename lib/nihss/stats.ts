@@ -115,17 +115,8 @@ function concordancePercent(
 }
 
 function durationMinutes(row: ErhebungRow): number | null {
-  if (!row.startzeit_untersuchung || !row.endzeit_untersuchung) {
-    return null;
-  }
-
-  const start = new Date(row.startzeit_untersuchung).getTime();
-  const end = new Date(row.endzeit_untersuchung).getTime();
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
-    return null;
-  }
-
-  return (end - start) / 60000;
+  const ms = getDecisionDurations(row).dauer_untersuchung_ms;
+  return ms == null ? null : ms / 60000;
 }
 
 export function buildDashboardStats(rows: ErhebungRow[]): DashboardStats {

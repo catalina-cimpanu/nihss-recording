@@ -60,6 +60,12 @@ export type ErhebungRow = {
   lyse_after_completion_status: "Ja" | "Keine Lyse" | null;
   lyse_after_completion_at: Timestamp | null;
   stroke_lyse_gleichzeitig: boolean;
+  startzeit_korrigiert: Timestamp | null;
+  endzeit_korrigiert: Timestamp | null;
+  stroke_korrigiert_at: Timestamp | null;
+  lyse_korrigiert_at: Timestamp | null;
+  stroke_status_korrigiert: "Ja" | "Kein Stroke" | null;
+  lyse_status_korrigiert: "Ja" | "Keine Lyse" | null;
   solo_patienten_id: string | null;
   tempis_stroke_verdacht: "Ja" | "Nein" | null;
   tempis_lyse_empfehlung: "Ja" | "Nein" | null;
