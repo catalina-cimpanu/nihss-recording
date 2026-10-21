@@ -17,10 +17,12 @@ type StickyScoreBarProps = {
 function DurationValue({
   startAt,
   endAt,
+  pausen,
   title,
 }: {
   startAt: string | null;
   endAt: string | null;
+  pausen: ErhebungRow["pausen"];
   title: string;
 }) {
   if (!startAt) {
@@ -31,6 +33,7 @@ function DurationValue({
     <ExamElapsedClock
       startAt={startAt}
       endAt={endAt}
+      pausen={pausen}
       className="tabular-nums text-foreground"
       title={title}
     />
@@ -63,6 +66,7 @@ export default function StickyScoreBar({
                   <ExamElapsedClock
                     startAt={startAt}
                     endAt={endAt}
+                    pausen={erhebung.pausen}
                     className="tabular-nums"
                     title="Untersuchungsdauer"
                   />
@@ -74,6 +78,7 @@ export default function StickyScoreBar({
               <DurationValue
                 startAt={clocks.startToStroke.startAt}
                 endAt={clocks.startToStroke.endAt}
+                pausen={erhebung.pausen}
                 title="Dauer Start bis Stroke-Entscheidung"
               />
               <span className="mx-2">|</span>
@@ -81,6 +86,7 @@ export default function StickyScoreBar({
               <DurationValue
                 startAt={clocks.strokeToLyse.startAt}
                 endAt={clocks.strokeToLyse.endAt}
+                pausen={erhebung.pausen}
                 title="Dauer Stroke- bis Lyse-Entscheidung"
               />
               <span className="mx-2">|</span>
@@ -88,6 +94,7 @@ export default function StickyScoreBar({
               <DurationValue
                 startAt={clocks.startToLyse.startAt}
                 endAt={clocks.startToLyse.endAt}
+                pausen={erhebung.pausen}
                 title="Dauer Start bis Lyse-Entscheidung"
               />
             </p>

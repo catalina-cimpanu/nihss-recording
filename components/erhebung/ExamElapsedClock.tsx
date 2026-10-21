@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatElapsedClock } from "@/lib/nihss/duration";
+import { formatElapsedClock, pausedMs } from "@/lib/nihss/duration";
+import type { Pause } from "@/lib/supabase/database.types";
 
 type ExamElapsedClockProps = {
   startAt: string | null;
   endAt?: string | null;
+  /** Paused time is left out, so the clock stands still during a pause. */
+  pausen?: readonly Pause[] | null;
   className?: string;
   title?: string;
 };
@@ -13,6 +16,7 @@ type ExamElapsedClockProps = {
 export default function ExamElapsedClock({
   startAt,
   endAt,
+  pausen,
   className,
   title = "Seit Untersuchungsstart",
 }: ExamElapsedClockProps) {
@@ -43,12 +47,9 @@ export default function ExamElapsedClock({
   }
 
   const endMs = endAt ? new Date(endAt).getTime() : now;
+  const activeMs = endMs - startMs - pausedMs(pausen, startMs, endMs, endMs);
   const elapsedMs =
-    endAt && Number.isFinite(endMs)
-      ? Math.max(0, endMs - startMs)
-      : mounted
-        ? Math.max(0, endMs - startMs)
-        : 0;
+    (endAt && Number.isFinite(endMs)) || mounted ? Math.max(0, activeMs) : 0;
 
   return (
     <span className={className} title={title} suppressHydrationWarning>

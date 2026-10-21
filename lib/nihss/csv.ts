@@ -5,7 +5,7 @@ function escapeCsvValue(value: unknown): string {
     return "";
   }
 
-  const text = String(value).replaceAll(/\r?\n/g, " | ");
+  const text = (typeof value === "object" ? JSON.stringify(value) : String(value)).replaceAll(/\r?\n/g, " | ");
   if (/[";]/.test(text)) {
     return `"${text.replaceAll("\"", "\"\"")}"`;
   }

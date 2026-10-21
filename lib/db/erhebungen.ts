@@ -29,6 +29,7 @@ export type ErhebungListItem = Pick<
   | "lyse_after_completion_status"
   | "stroke_status_korrigiert"
   | "lyse_status_korrigiert"
+  | "pausen"
   | "startzeit_untersuchung"
   | "endzeit_untersuchung"
 > & {
@@ -41,7 +42,7 @@ export async function listErhebungen(): Promise<ErhebungListItem[]> {
   const { data, error } = await getSupabaseClient()
     .from("erhebungen")
     .select(
-      "id, created_at, erhebungs_id, untersuchungstyp, untersuchung_status, followup_status, nihss, g_fast, stroke_status, lyse_status, stroke_after_completion_status, lyse_after_completion_status, startzeit_untersuchung, endzeit_untersuchung, stroke_initial_at, stroke_last_at, lyse_initial_at, lyse_last_at, stroke_lyse_gleichzeitig, startzeit_korrigiert, endzeit_korrigiert, stroke_korrigiert_at, lyse_korrigiert_at, stroke_status_korrigiert, lyse_status_korrigiert, punkte_2, punkte_4, punkte_5a, punkte_5b, punkte_9_grob, punkte_10",
+      "id, created_at, erhebungs_id, untersuchungstyp, untersuchung_status, followup_status, nihss, g_fast, stroke_status, lyse_status, stroke_after_completion_status, lyse_after_completion_status, startzeit_untersuchung, endzeit_untersuchung, stroke_initial_at, stroke_last_at, lyse_initial_at, lyse_last_at, stroke_lyse_gleichzeitig, pausen, startzeit_korrigiert, endzeit_korrigiert, stroke_korrigiert_at, lyse_korrigiert_at, stroke_status_korrigiert, lyse_status_korrigiert, punkte_2, punkte_4, punkte_5a, punkte_5b, punkte_9_grob, punkte_10",
     )
     .neq("untersuchung_status", "geloescht")
     .order("created_at", { ascending: false });
@@ -69,6 +70,7 @@ export async function listErhebungen(): Promise<ErhebungListItem[]> {
       lyse_after_completion_status: row.lyse_after_completion_status,
       stroke_status_korrigiert: row.stroke_status_korrigiert,
       lyse_status_korrigiert: row.lyse_status_korrigiert,
+      pausen: row.pausen ?? [],
       // Corrected times when set, like stroke_/lyse_entscheidung_at below.
       startzeit_untersuchung: startAt,
       endzeit_untersuchung: endAt,

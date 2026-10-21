@@ -64,7 +64,10 @@ export default function EinfuehrungPage() {
             und Sie mit der NIHSS beginnen:{" "}
             <strong>Untersuchung starten</strong> oder das erste NIHSS-Item
             antippen. Danach die Fragen in der vorgegebenen Reihenfolge
-            beantworten.
+            beantworten. Bei einer Unterbrechung <strong>Pause</strong>{" "}
+            drücken: Die Zeit wird angehalten, bis der Grund der Pause
+            angegeben und <strong>Untersuchung fortsetzen</strong> gewählt
+            wird.
           </li>
           <li>
             <strong>Stroke und Lyse während der Untersuchung.</strong> Die
@@ -88,9 +91,11 @@ export default function EinfuehrungPage() {
             <strong>Ja</strong>, um die Gründe auszuwählen.{" "}
             Die <strong>Zeiten</strong> (Start, Ende, Stroke, Lyse) sind mit
             Ende der Untersuchung abgeschlossen. Über{" "}
-            <strong>Zeiten nachträglich korrigieren</strong> lassen sich die
+            <strong>Zeiten nachträglich festlegen oder korrigieren</strong> lassen sich die
             Uhrzeiten und die Stroke-/Lyse-Entscheidungen korrigieren oder
             nachtragen; die geklickten Werte bleiben gespeichert.{" "}
+            Unter <strong>Pausen</strong> lässt sich der Grund einer Pause
+            nachträglich bearbeiten.{" "}
             <strong>Speichern</strong> lässt die Felder auf der
             Erhebungsseite änderbar. <strong>Abschließen</strong> sperrt sie.
             Danach öffnet{" "}

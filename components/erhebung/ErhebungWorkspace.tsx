@@ -6,6 +6,8 @@ import ErhebungNihssForm from "@/components/erhebung/ErhebungNihssForm";
 import FollowupFields from "@/components/erhebung/FollowupFields";
 import ExamViewToggle from "@/components/erhebung/ExamViewToggle";
 import KlickprotokollExportButton from "@/components/erhebung/KlickprotokollExportButton";
+import PauseList from "@/components/erhebung/PauseList";
+import PauseOverlay from "@/components/erhebung/PauseOverlay";
 import ScrollToTopButton from "@/components/erhebung/ScrollToTopButton";
 import StickyScoreBar from "@/components/erhebung/StickyScoreBar";
 import TimeCorrectionFields from "@/components/erhebung/TimeCorrectionFields";
@@ -31,12 +33,16 @@ import {
   applyLifecycleEvent,
   applyMissingFieldsAsNormal,
   applyLyseReset,
+  applyPauseGrundCorrection,
+  applyPauseToggle,
   shouldPromptLyseWithoutStroke,
+  type PauseGrundAngabe,
 } from "@/lib/nihss/clicks";
 import {
   AUTO_CLOSE_AFTER_MS,
   autoCloseStopAt,
   examTimes,
+  isPaused,
   shouldAutoCloseExam,
 } from "@/lib/nihss/duration";
 import {
@@ -113,6 +119,8 @@ export default function ErhebungWorkspace({
   const followupClosed = erhebung.followup_status === "abgeschlossen";
   const { startAt: examStartAt, endAt: examEndAt } = examTimes(erhebung);
   const readOnly = erhebung.untersuchung_status === "abgeschlossen";
+  const paused = !readOnly && isPaused(erhebung);
+  const openPause = paused ? erhebung.pausen.at(-1) : undefined;
   const missingFields = useMemo(
     () => getMissingNihssFields(erhebung),
     [erhebung],
@@ -244,7 +252,7 @@ export default function ErhebungWorkspace({
   }, [readOnly, isSaving, erhebung.id, erhebung.startzeit_untersuchung]);
 
   async function handleSelect(field: ClickableField, value: string) {
-    if (readOnly || closeFlow.lyseOrder) {
+    if (readOnly || paused || closeFlow.lyseOrder) {
       return;
     }
 
@@ -317,8 +325,20 @@ export default function ErhebungWorkspace({
     await persist(result.erhebung, [result.ereignis]);
   }
 
+  async function handlePauseToggle(grund?: PauseGrundAngabe) {
+    if (readOnly || !erhebungRef.current.startzeit_untersuchung) {
+      return;
+    }
+    const result = applyPauseToggle({
+      erhebung: erhebungRef.current,
+      now: new Date(),
+      grund,
+    });
+    await persist(result.erhebung, [result.ereignis]);
+  }
+
   async function handleStopRequest() {
-    if (readOnly || closeFlow.lyseOrder) {
+    if (readOnly || paused || closeFlow.lyseOrder) {
       return;
     }
     if (!erhebung.startzeit_untersuchung) {
@@ -436,6 +456,18 @@ export default function ErhebungWorkspace({
     });
     await persist(result.erhebung, [result.ereignis]);
     proceedToFollowup();
+  }
+
+  async function savePauseGrund(index: number, grund: PauseGrundAngabe) {
+    const result = applyPauseGrundCorrection({
+      erhebung: erhebungRef.current,
+      index,
+      grund,
+      now: new Date(),
+    });
+    if (result.ereignisse.length > 0) {
+      await persist(result.erhebung, result.ereignisse);
+    }
   }
 
   async function saveTimeCorrection(
@@ -648,6 +680,15 @@ export default function ErhebungWorkspace({
               />
             </section>
 
+            {erhebung.pausen?.length ? (
+              <>
+                <h2 className="text-2xl font-bold">Pausen</h2>
+                <section className="rounded-xl border border-border bg-surface p-3">
+                  <PauseList pausen={erhebung.pausen} onSave={savePauseGrund} />
+                </section>
+              </>
+            ) : null}
+
             <h2 className="text-2xl font-bold">Angaben zum Konsil</h2>
             <section className="space-y-3 rounded-xl border border-border bg-surface p-3">
               <p className="text-sm text-muted">
@@ -724,28 +765,63 @@ export default function ErhebungWorkspace({
                 onChange={setViewMode}
                 buttonHeight={stickyOptionHeight}
               />
-              <button
-                type="button"
-                onClick={handleStopRequest}
-                style={
-                  stickyOptionHeight != null
-                    ? {
-                        height: stickyOptionHeight,
-                        minHeight: stickyOptionHeight,
-                        boxSizing: "border-box",
-                      }
-                    : undefined
-                }
-                className={`${optionStyles.optionButton} ${optionStyles.stopExamButton} ${optionStyles.stopExam} flex min-w-0 flex-1 items-center justify-center`}
-              >
-                Untersuchung beenden
-              </button>
+              {/* Pause : Beenden = 1:1 on mobile, 1:2 on desktop. */}
+              <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 md:grid-cols-3">
+                {erhebung.startzeit_untersuchung ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handlePauseToggle();
+                    }}
+                    style={
+                      stickyOptionHeight != null
+                        ? {
+                            height: stickyOptionHeight,
+                            minHeight: stickyOptionHeight,
+                            boxSizing: "border-box",
+                          }
+                        : undefined
+                    }
+                    className="min-w-0 rounded-[0.4rem] border border-tempis-orange bg-tempis-orange px-3 text-sm font-semibold text-white hover:brightness-95"
+                  >
+                    Pause
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={handleStopRequest}
+                  style={
+                    stickyOptionHeight != null
+                      ? {
+                          height: stickyOptionHeight,
+                          minHeight: stickyOptionHeight,
+                          boxSizing: "border-box",
+                        }
+                      : undefined
+                  }
+                  className={`${optionStyles.optionButton} ${optionStyles.stopExamButton} ${optionStyles.stopExam} flex min-w-0 items-center justify-center ${
+                    erhebung.startzeit_untersuchung ? "md:col-span-2" : "col-span-full"
+                  }`}
+                >
+                  Untersuchung beenden
+                </button>
+              </div>
             </div>
           </div>
         </div>
       ) : (
         <ScrollToTopButton className="bottom-4" />
       )}
+
+      {openPause ? (
+        <PauseOverlay
+          key={openPause.von}
+          von={openPause.von}
+          onResume={(grund) => {
+            void handlePauseToggle(grund);
+          }}
+        />
+      ) : null}
 
       {saveStatus === "saving" ||
       saveStatus === "saved" ||

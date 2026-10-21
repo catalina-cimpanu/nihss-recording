@@ -1,4 +1,9 @@
-import type { EreignisInsert, ErhebungRow } from "@/lib/supabase/database.types";
+import type {
+  EreignisInsert,
+  ErhebungRow,
+  Pause,
+  PauseGrund,
+} from "@/lib/supabase/database.types";
 import {
   MULTI_VALUE_SEPARATOR,
   getFieldByKey,
@@ -7,8 +12,12 @@ import {
   type NihssOption,
 } from "@/lib/nihss/config";
 import { calculateGfast, calculateNihss } from "@/lib/nihss/scoring";
-import { appendTimelineLine, formatTimelineLine } from "@/lib/nihss/timeline";
-import { isLyseBeforeStroke } from "@/lib/nihss/duration";
+import {
+  appendTimelineLine,
+  formatBerlinTime,
+  formatTimelineLine,
+} from "@/lib/nihss/timeline";
+import { isLyseBeforeStroke, isPaused } from "@/lib/nihss/duration";
 import { hasRealAtaxiaLimbFinding } from "@/lib/nihss/validation-exam";
 
 function setColumn<K extends keyof ErhebungRow>(
@@ -377,6 +386,9 @@ export function applyLifecycleEvent(args: {
   if (args.kind === "stop") {
     next.endzeit_untersuchung = nowIso;
     next.untersuchung_status = "abgeschlossen";
+    if (isPaused(next)) {
+      next.pausen = closeOpenPause(next.pausen, nowIso);
+    }
   }
 
   next.timeline = appendTimelineLine(
@@ -394,6 +406,141 @@ export function applyLifecycleEvent(args: {
       wert_score: null,
       ereignis_typ: "lifecycle",
     },
+  };
+}
+
+export const PAUSE_GRUENDE: readonly PauseGrund[] = [
+  "Lyse-Verabreichung",
+  "Telefonat",
+  "Technisches Problem",
+  "Sonstige",
+];
+
+export type PauseGrundAngabe = Required<Pick<Pause, "gruende" | "sonstige_text">>;
+
+function closeOpenPause(
+  pausen: ErhebungRow["pausen"],
+  nowIso: string,
+  grund?: PauseGrundAngabe,
+) {
+  return pausen.map((pause, index) =>
+    index === pausen.length - 1 && !pause.bis
+      ? { ...pause, ...grund, bis: nowIso }
+      : pause,
+  );
+}
+
+function normalizePauseGrund(grund: PauseGrundAngabe): PauseGrundAngabe {
+  return {
+    gruende: grund.gruende,
+    sonstige_text: grund.gruende.includes("Sonstige")
+      ? grund.sonstige_text?.trim() || null
+      : null,
+  };
+}
+
+export function pauseGrundLabel(grund: Partial<PauseGrundAngabe>): string {
+  if (!grund.gruende?.length) {
+    return "nicht angegeben";
+  }
+  return grund.gruende
+    .map((item) =>
+      item === "Sonstige" && grund.sonstige_text
+        ? `Sonstige (${grund.sonstige_text})`
+        : item,
+    )
+    .join(", ");
+}
+
+export function applyPauseToggle(args: {
+  erhebung: ErhebungRow;
+  now: Date;
+  /** Reasons for the pause, given when continuing. */
+  grund?: PauseGrundAngabe;
+}): { erhebung: ErhebungRow; ereignis: EreignisInsert } {
+  const paused = isPaused(args.erhebung);
+  const nowIso = args.now.toISOString();
+  const pausen = args.erhebung.pausen ?? [];
+  const grund = args.grund && normalizePauseGrund(args.grund);
+  const label = !paused
+    ? "Untersuchung pausiert"
+    : grund && grund.gruende.length > 0
+      ? `Untersuchung fortgesetzt (Grund: ${pauseGrundLabel(grund)})`
+      : "Untersuchung fortgesetzt";
+  const next: ErhebungRow = {
+    ...args.erhebung,
+    pausen: paused
+      ? closeOpenPause(pausen, nowIso, grund)
+      : [...pausen, { von: nowIso, bis: null }],
+    timeline: appendTimelineLine(
+      args.erhebung.timeline,
+      formatTimelineLine(args.now, "Untersuchung", label),
+    ),
+  };
+
+  return {
+    erhebung: next,
+    ereignis: {
+      erhebung_id: next.id,
+      feld_key: paused ? "resume" : "pause",
+      feld_label: "Untersuchung",
+      wert_label: label,
+      wert_score: null,
+      ereignis_typ: "lifecycle",
+    },
+  };
+}
+
+export function pauseLabel(pause: Pause, index: number): string {
+  const bis = pause.bis ? formatBerlinTime(new Date(pause.bis)) : "läuft";
+  return `Pause ${index + 1} (${formatBerlinTime(new Date(pause.von))}–${bis})`;
+}
+
+/** Changes the reasons of a finished pause after the Untersuchung. */
+export function applyPauseGrundCorrection(args: {
+  erhebung: ErhebungRow;
+  index: number;
+  grund: PauseGrundAngabe;
+  now: Date;
+}): { erhebung: ErhebungRow; ereignisse: EreignisInsert[] } {
+  const current = args.erhebung;
+  const pause = current.pausen?.[args.index];
+  const grund = normalizePauseGrund(args.grund);
+  if (
+    current.untersuchung_status !== "abgeschlossen" ||
+    !pause?.bis ||
+    grund.gruende.length === 0 ||
+    (JSON.stringify(pause.gruende ?? []) === JSON.stringify(grund.gruende) &&
+      (pause.sonstige_text ?? null) === grund.sonstige_text)
+  ) {
+    return { erhebung: current, ereignisse: [] };
+  }
+
+  const feldLabel = "Pausengrund (korrigiert)";
+  const wertLabel = `${pauseLabel(pause, args.index)}: ${pauseGrundLabel(grund)}`;
+  const next: ErhebungRow = {
+    ...current,
+    pausen: current.pausen.map((item, index) =>
+      index === args.index ? { ...item, ...grund } : item,
+    ),
+    timeline: appendTimelineLine(
+      current.timeline,
+      formatTimelineLine(args.now, feldLabel, wertLabel),
+    ),
+  };
+
+  return {
+    erhebung: next,
+    ereignisse: [
+      {
+        erhebung_id: next.id,
+        feld_key: "pause_grund",
+        feld_label: feldLabel,
+        wert_label: wertLabel,
+        wert_score: null,
+        ereignis_typ: "korrektur",
+      },
+    ],
   };
 }
 

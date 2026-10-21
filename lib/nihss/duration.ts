@@ -1,4 +1,4 @@
-import type { ErhebungRow } from "@/lib/supabase/database.types";
+import type { ErhebungRow, Pause } from "@/lib/supabase/database.types";
 
 export type DurationInput = Pick<
   ErhebungRow,
@@ -21,6 +21,7 @@ export type DurationInput = Pick<
       | "lyse_korrigiert_at"
       | "stroke_status_korrigiert"
       | "lyse_status_korrigiert"
+      | "pausen"
     >
   >;
 
@@ -103,6 +104,30 @@ function parseTimestamp(value: string | null | undefined): number | null {
   return Number.isFinite(ms) ? ms : null;
 }
 
+/** Paused time between `fromMs` and `toMs`; a running pause counts until `nowMs`. */
+export function pausedMs(
+  pausen: readonly Pause[] | null | undefined,
+  fromMs: number,
+  toMs: number,
+  nowMs = Date.now(),
+): number {
+  let total = 0;
+  for (const pause of pausen ?? []) {
+    const von = parseTimestamp(pause.von);
+    if (von == null) {
+      continue;
+    }
+    const bis = parseTimestamp(pause.bis) ?? nowMs;
+    total += Math.max(0, Math.min(bis, toMs) - Math.max(von, fromMs));
+  }
+  return total;
+}
+
+export function isPaused(row: Partial<Pick<ErhebungRow, "pausen">>): boolean {
+  const last = row.pausen?.at(-1);
+  return Boolean(last && !last.bis);
+}
+
 function positiveDiffMs(from: number | null, to: number | null): number | null {
   if (from == null || to == null || to < from) {
     return null;
@@ -161,17 +186,22 @@ export function getDecisionDurations(row: DurationInput): DecisionDurations {
   const strokeMs = parseTimestamp(strokeAt);
   const lyseMs = parseTimestamp(lyseAt);
   const inverted = isLyseBeforeStroke(row);
+  // Paused time does not count, like a stopped clock.
+  const activeMs = (from: number | null, to: number | null) => {
+    const diff = positiveDiffMs(from, to);
+    return diff == null ? null : diff - pausedMs(row.pausen, from!, to!);
+  };
 
   return {
     strokeAt,
     lyseAt,
-    dauer_untersuchung_ms: positiveDiffMs(startMs, endMs),
-    dauer_start_zu_stroke_ms: positiveDiffMs(startMs, strokeMs),
+    dauer_untersuchung_ms: activeMs(startMs, endMs),
+    dauer_start_zu_stroke_ms: activeMs(startMs, strokeMs),
     dauer_stroke_zu_lyse_ms:
       inverted && row.stroke_lyse_gleichzeitig
         ? 0
-        : positiveDiffMs(strokeMs, lyseMs),
-    dauer_start_zu_lyse_ms: positiveDiffMs(startMs, lyseMs),
+        : activeMs(strokeMs, lyseMs),
+    dauer_start_zu_lyse_ms: activeMs(startMs, lyseMs),
   };
 }
 

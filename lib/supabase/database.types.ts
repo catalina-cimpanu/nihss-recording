@@ -8,6 +8,23 @@ export type Json =
 
 type Timestamp = string;
 
+export type PauseGrund =
+  | "Lyse-Verabreichung"
+  | "Telefonat"
+  | "Technisches Problem"
+  | "Sonstige";
+
+/**
+ * A pause during the Untersuchung; `bis` is null while it is running.
+ * The reasons are given when the Untersuchung is continued.
+ */
+export type Pause = {
+  von: Timestamp;
+  bis: Timestamp | null;
+  gruende?: PauseGrund[];
+  sonstige_text?: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -60,6 +77,7 @@ export type ErhebungRow = {
   lyse_after_completion_status: "Ja" | "Keine Lyse" | null;
   lyse_after_completion_at: Timestamp | null;
   stroke_lyse_gleichzeitig: boolean;
+  pausen: Pause[];
   startzeit_korrigiert: Timestamp | null;
   endzeit_korrigiert: Timestamp | null;
   stroke_korrigiert_at: Timestamp | null;

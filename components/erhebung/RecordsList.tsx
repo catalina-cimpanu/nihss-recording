@@ -114,10 +114,12 @@ function FilterRow({
 function RecordDuration({
   startAt,
   endAt,
+  pausen,
   title,
 }: {
   startAt: string | null;
   endAt: string | null;
+  pausen: ErhebungListItem["pausen"];
   title?: string;
 }) {
   if (!startAt) {
@@ -128,6 +130,7 @@ function RecordDuration({
     <ExamElapsedClock
       startAt={startAt}
       endAt={endAt}
+      pausen={pausen}
       className="tabular-nums"
       title={title}
     />
@@ -358,6 +361,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
             <p className="text-sm">
               NIHSS {row.nihss} · G-FAST {row.g_fast} · Dauer{" "}
               <RecordDuration
+                pausen={row.pausen}
                 startAt={row.startzeit_untersuchung}
                 endAt={row.endzeit_untersuchung}
                 title="Untersuchungsdauer"
@@ -366,6 +370,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
             <p className="text-sm">
               Start→Stroke{" "}
               <RecordDuration
+                pausen={row.pausen}
                 startAt={clocks.startToStroke.startAt}
                 endAt={clocks.startToStroke.endAt}
                 title="Dauer Start bis Stroke-Entscheidung"
@@ -373,6 +378,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
               {" · "}
               Stroke→Lyse{" "}
               <RecordDuration
+                pausen={row.pausen}
                 startAt={clocks.strokeToLyse.startAt}
                 endAt={clocks.strokeToLyse.endAt}
                 title="Dauer Stroke- bis Lyse-Entscheidung"
@@ -439,6 +445,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   <RecordDuration
+                    pausen={row.pausen}
                     startAt={row.startzeit_untersuchung}
                     endAt={row.endzeit_untersuchung}
                     title="Untersuchungsdauer"
@@ -446,6 +453,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   <RecordDuration
+                    pausen={row.pausen}
                     startAt={clocks.startToStroke.startAt}
                     endAt={clocks.startToStroke.endAt}
                     title="Dauer Start bis Stroke-Entscheidung"
@@ -453,6 +461,7 @@ export default function RecordsList({ initialRows }: RecordsListProps) {
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   <RecordDuration
+                    pausen={row.pausen}
                     startAt={clocks.strokeToLyse.startAt}
                     endAt={clocks.strokeToLyse.endAt}
                     title="Dauer Stroke- bis Lyse-Entscheidung"

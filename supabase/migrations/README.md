@@ -26,3 +26,4 @@ Durations (`dauer_*`, `stroke_entscheidung_at`, `lyse_entscheidung_at`) are **no
 | `018_umstaende_weitere.sql` | Umstände: Ablenkung, technische Probleme, Hörminderung | |
 | `019_zeit_korrekturen.sql` | Manual time corrections and decisions entered afterwards | |
 | `020_status_korrigiert.sql` | Rename `*_nachgetragen` to `*_status_korrigiert` (also corrects clicked decisions) | |
+| `021_pausen.sql` | Pauses during the Untersuchung (excluded from durations) | |

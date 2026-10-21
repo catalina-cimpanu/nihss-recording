@@ -139,7 +139,7 @@ export default function TimeCorrectionFields({
           }}
           className="rounded-lg border border-border px-4 py-3 font-semibold"
         >
-          Zeiten nachträglich korrigieren
+          Zeiten nachträglich festlegen oder korrigieren
         </button>
       </div>
     );

@@ -10,8 +10,11 @@ import {
   applyLifecycleEvent,
   applyStrokeLyseSimultaneous,
   applyLyseReset,
+  applyPauseGrundCorrection,
+  applyPauseToggle,
   shouldPromptLyseWithoutStroke,
 } from "@/lib/nihss/clicks";
+import { getDecisionDurations, isPaused } from "@/lib/nihss/duration";
 
 function row(overrides: Partial<ErhebungRow> = {}): ErhebungRow {
   return {
@@ -37,6 +40,7 @@ function row(overrides: Partial<ErhebungRow> = {}): ErhebungRow {
     nihss: 0,
     g_fast: 0,
     timeline: "",
+    pausen: [],
     ...overrides,
   } as ErhebungRow;
 }
@@ -295,5 +299,129 @@ describe("applyLyseReset", () => {
     assert.equal(result.erhebung.stroke_lyse_gleichzeitig, false);
     assert.equal(result.erhebung.stroke_status, "Ja");
     assert.equal(result.ereignisse[0]?.feld_key, "lyse");
+  });
+});
+
+describe("applyPauseToggle", () => {
+  it("stores the reasons with the pause when continuing", () => {
+    const paused = applyPauseToggle({
+      erhebung: row({ startzeit_untersuchung: "2026-08-27T10:00:00.000Z" }),
+      now: new Date("2026-08-27T10:02:00.000Z"),
+    });
+    const resumed = applyPauseToggle({
+      erhebung: paused.erhebung,
+      now: new Date("2026-08-27T10:04:00.000Z"),
+      grund: { gruende: ["Telefonat", "Sonstige"], sonstige_text: " Angehörige " },
+    });
+    assert.deepEqual(resumed.erhebung.pausen[0], {
+      von: "2026-08-27T10:02:00.000Z",
+      bis: "2026-08-27T10:04:00.000Z",
+      gruende: ["Telefonat", "Sonstige"],
+      sonstige_text: "Angehörige",
+    });
+    assert.equal(
+      resumed.ereignis.wert_label,
+      "Untersuchung fortgesetzt (Grund: Telefonat, Sonstige (Angehörige))",
+    );
+  });
+
+  it("pauses and resumes, and the pause does not count in the durations", () => {
+    const started = row({ startzeit_untersuchung: "2026-08-27T10:00:00.000Z" });
+    const paused = applyPauseToggle({
+      erhebung: started,
+      now: new Date("2026-08-27T10:02:00.000Z"),
+    });
+    assert.equal(isPaused(paused.erhebung), true);
+    assert.equal(paused.ereignis.feld_key, "pause");
+    assert.match(paused.erhebung.timeline, /Untersuchung pausiert/);
+
+    const resumed = applyPauseToggle({
+      erhebung: paused.erhebung,
+      now: new Date("2026-08-27T10:07:00.000Z"),
+    });
+    assert.equal(isPaused(resumed.erhebung), false);
+    assert.equal(resumed.ereignis.feld_key, "resume");
+    assert.deepEqual(resumed.erhebung.pausen, [
+      { von: "2026-08-27T10:02:00.000Z", bis: "2026-08-27T10:07:00.000Z" },
+    ]);
+
+    const done = row({
+      ...resumed.erhebung,
+      endzeit_untersuchung: "2026-08-27T10:10:00.000Z",
+      stroke_status: "Ja",
+      stroke_last_at: "2026-08-27T10:08:00.000Z",
+      lyse_status: "Ja",
+      lyse_last_at: "2026-08-27T10:01:00.000Z",
+      stroke_lyse_gleichzeitig: false,
+    });
+    const durations = getDecisionDurations(done);
+    assert.equal(durations.dauer_untersuchung_ms, 5 * 60_000);
+    assert.equal(durations.dauer_start_zu_stroke_ms, 3 * 60_000);
+    // Lyse before the pause: unaffected.
+    assert.equal(durations.dauer_start_zu_lyse_ms, 60_000);
+  });
+
+  it("closes a running pause when the Untersuchung is ended", () => {
+    const paused = applyPauseToggle({
+      erhebung: row({ startzeit_untersuchung: "2026-08-27T10:00:00.000Z" }),
+      now: new Date("2026-08-27T10:02:00.000Z"),
+    });
+    const stopped = applyLifecycleEvent({
+      erhebung: paused.erhebung,
+      now: new Date("2026-08-27T13:00:00.000Z"),
+      kind: "stop",
+    });
+    assert.equal(isPaused(stopped.erhebung), false);
+    assert.equal(stopped.erhebung.pausen[0]?.bis, "2026-08-27T13:00:00.000Z");
+    assert.equal(getDecisionDurations(stopped.erhebung).dauer_untersuchung_ms, 2 * 60_000);
+  });
+});
+
+describe("applyPauseGrundCorrection", () => {
+  const ended = row({
+    untersuchung_status: "abgeschlossen",
+    startzeit_untersuchung: "2026-08-27T10:00:00.000Z",
+    endzeit_untersuchung: "2026-08-27T10:10:00.000Z",
+    pausen: [
+      {
+        von: "2026-08-27T10:02:00.000Z",
+        bis: "2026-08-27T10:04:00.000Z",
+        gruende: ["Telefonat"],
+        sonstige_text: null,
+      },
+    ],
+  });
+
+  it("changes the reasons after the Untersuchung and logs the change", () => {
+    const result = applyPauseGrundCorrection({
+      erhebung: ended,
+      index: 0,
+      grund: { gruende: ["Technisches Problem"], sonstige_text: "ignoriert" },
+      now: new Date("2026-08-27T11:00:00.000Z"),
+    });
+    assert.deepEqual(result.erhebung.pausen[0]?.gruende, ["Technisches Problem"]);
+    assert.equal(result.erhebung.pausen[0]?.sonstige_text, null);
+    assert.equal(result.erhebung.pausen[0]?.bis, "2026-08-27T10:04:00.000Z");
+    assert.equal(result.ereignisse.length, 1);
+    assert.equal(result.ereignisse[0]?.feld_label, "Pausengrund (korrigiert)");
+    assert.equal(
+      result.ereignisse[0]?.wert_label,
+      "Pause 1 (12:02:00–12:04:00): Technisches Problem",
+    );
+  });
+
+  it("does nothing without a change, without a reason, or during the Untersuchung", () => {
+    const grund = { gruende: ["Telefonat" as const], sonstige_text: null };
+    const now = new Date();
+    assert.equal(applyPauseGrundCorrection({ erhebung: ended, index: 0, grund, now }).ereignisse.length, 0);
+    assert.equal(
+      applyPauseGrundCorrection({ erhebung: ended, index: 0, grund: { gruende: [], sonstige_text: null }, now }).ereignisse.length,
+      0,
+    );
+    const running = row({ ...ended, untersuchung_status: "offen" });
+    assert.equal(
+      applyPauseGrundCorrection({ erhebung: running, index: 0, grund: { gruende: ["Sonstige"], sonstige_text: "x" }, now }).ereignisse.length,
+      0,
+    );
   });
 });
