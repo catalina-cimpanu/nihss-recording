@@ -292,7 +292,11 @@ describe("applyPauseAdd / applyPauseRemove", () => {
     const reversed = applyPauseAdd({ erhebung, von: "10:04", bis: "10:03", grund, now });
     assert.match(reversed.error ?? "", /nach dem Beginn/);
     const overlapping = applyPauseAdd({ erhebung, von: "10:05", bis: "10:07", grund, now });
-    assert.match(overlapping.error ?? "", /überschneidet sich mit Pause 1/);
+    assert.ok(
+      (overlapping.error ?? "").includes(
+        "überschneidet sich mit Pause / Unterbrechung 1",
+      ),
+    );
   });
 
   it("keeps the pauses in order and never removes a recorded pause", () => {

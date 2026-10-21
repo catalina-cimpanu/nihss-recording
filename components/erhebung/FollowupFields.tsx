@@ -16,7 +16,7 @@ import {
 } from "@/lib/nihss/followup";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
-type FollowupVisibility = "always" | "ifMissing" | "never";
+type FollowupVisibility = "always" | "never";
 
 type FollowupFieldsProps = {
   values: FollowupValues;
@@ -154,11 +154,7 @@ export default function FollowupFields({
   disabled,
   onChange,
 }: FollowupFieldsProps) {
-  const preMode = preFields ?? (mode === "pre" ? "always" : "never");
-  const showSolo =
-    preMode === "always" ||
-    (preMode === "ifMissing" &&
-      (values.solo_patienten_id == null || values.solo_patienten_id === ""));
+  const showSolo = (preFields ?? (mode === "pre" ? "always" : "never")) === "always";
 
   return (
     <div className="space-y-4">

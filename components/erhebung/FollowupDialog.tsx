@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import AppDialog from "@/components/erhebung/AppDialog";
 import FollowupFields from "@/components/erhebung/FollowupFields";
 import {
@@ -25,6 +26,9 @@ export default function FollowupDialog({
   onSave,
   onCloseErhebung,
 }: FollowupDialogProps) {
+  // Decided once when the dialog opens, so the field stays while the ID is typed.
+  const [soloMissing] = useState(() => isSoloPatientenIdMissing(values));
+
   return (
     <AppDialog
       title="Angaben zum Konsil"
@@ -36,7 +40,7 @@ export default function FollowupDialog({
     >
       <p className="text-sm text-muted">
         Die Angaben können später auf der Erhebungsseite ergänzt werden.
-        {isSoloPatientenIdMissing(values)
+        {soloMissing
           ? " Die Solo-Patienten-ID kann hier nachgetragen werden."
           : ""}
       </p>
@@ -44,7 +48,7 @@ export default function FollowupDialog({
         <FollowupFields
           values={{ ...emptyFollowupValues(), ...values }}
           mode="post"
-          preFields="ifMissing"
+          preFields={soloMissing ? "always" : "never"}
           onChange={onChange}
         />
       </div>

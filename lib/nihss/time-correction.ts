@@ -303,7 +303,10 @@ export function applyPauseAdd(args: {
   | { error: string } {
   const row = args.erhebung;
   if (row.untersuchung_status !== "abgeschlossen") {
-    return { error: "Pausen können erst nach Ende der Untersuchung nachgetragen werden." };
+    return {
+      error:
+        "Pausen / Unterbrechungen können erst nach Ende der Untersuchung nachgetragen werden.",
+    };
   }
   const { startAt, endAt } = examTimes(row);
   if (!startAt || !endAt) {
@@ -312,11 +315,11 @@ export function applyPauseAdd(args: {
   const vonTime = normalizeTimeOfDay(args.von)?.slice(0, 5);
   const bisTime = normalizeTimeOfDay(args.bis)?.slice(0, 5);
   if (!vonTime || !bisTime) {
-    return { error: "Bitte Beginn und Ende der Pause angeben." };
+    return { error: "Bitte Beginn und Ende der Pause / Unterbrechung angeben." };
   }
   const grund = normalizePauseGrund(args.grund);
   if (grund.gruende.length === 0) {
-    return { error: "Bitte den Grund der Pause wählen." };
+    return { error: "Bitte den Grund der Pause / Unterbrechung wählen." };
   }
 
   let von = nearestBerlinTime(startAt, vonTime)!;
@@ -329,10 +332,12 @@ export function applyPauseAdd(args: {
     bis = endAt;
   }
   if (Date.parse(bis) <= Date.parse(von)) {
-    return { error: "Das Ende der Pause muss nach dem Beginn liegen." };
+    return { error: "Das Ende der Pause / Unterbrechung muss nach dem Beginn liegen." };
   }
   if (Date.parse(von) < Date.parse(startAt) || Date.parse(bis) > Date.parse(endAt)) {
-    return { error: "Die Pause muss zwischen Start und Ende der Untersuchung liegen." };
+    return {
+      error: "Die Pause / Unterbrechung muss zwischen Start und Ende der Untersuchung liegen.",
+    };
   }
   const pausen = row.pausen ?? [];
   const overlap = pausen.findIndex(
@@ -341,7 +346,9 @@ export function applyPauseAdd(args: {
       Date.parse(bis) > Date.parse(pause.von),
   );
   if (overlap >= 0) {
-    return { error: `Die Pause überschneidet sich mit Pause ${overlap + 1}.` };
+    return {
+      error: `Die Pause / Unterbrechung überschneidet sich mit Pause / Unterbrechung ${overlap + 1}.`,
+    };
   }
 
   const added = { von, bis, ...grund, nachgetragen: true };

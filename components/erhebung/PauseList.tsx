@@ -19,6 +19,7 @@ type PauseListProps = {
 };
 
 const EMPTY_GRUND: PauseGrundDraft = { gruende: [], sonstige_text: "" };
+const NOUN = "Pause / Unterbrechung";
 
 function AddPauseForm({
   onAdd,
@@ -31,11 +32,14 @@ function AddPauseForm({
   const [bis, setBis] = useState("");
   const [grund, setGrund] = useState<PauseGrundDraft>(EMPTY_GRUND);
   const [error, setError] = useState<string | null>(null);
-  const missing = !von || !bis ? "Bitte Beginn und Ende der Pause angeben." : pauseGrundMissing(grund);
+  const missing =
+    !von || !bis
+      ? `Bitte Beginn und Ende der ${NOUN} angeben.`
+      : pauseGrundMissing(grund, NOUN);
 
   return (
     <div className={`space-y-3 ${optionStyles.fieldFrame} ${optionStyles.fieldFrameSide}`}>
-      <h3 className="text-sm font-semibold">Pause nachträglich hinzufügen</h3>
+      <h3 className="text-sm font-semibold">{NOUN} nachträglich hinzufügen</h3>
       <div className="flex flex-wrap gap-3 text-sm">
         <label className="flex items-center gap-2">
           Beginn
@@ -63,6 +67,7 @@ function AddPauseForm({
         </label>
       </div>
       <PauseGrundFields
+        noun={NOUN}
         value={grund}
         onChange={(next) => {
           setError(null);
@@ -111,12 +116,12 @@ export default function PauseList({ pausen, onSave, onAdd, onRemove }: PauseList
   return (
     <div className="space-y-3">
       {pausen.length === 0 ? (
-        <p className="text-sm text-muted">Keine Pausen erfasst.</p>
+        <p className="text-sm text-muted">Keine Pausen / Unterbrechungen erfasst.</p>
       ) : null}
       {pausen.map((pause, index) => {
         const durationMs = pause.bis ? Date.parse(pause.bis) - Date.parse(pause.von) : null;
         const draft = editing?.index === index ? editing.draft : null;
-        const missing = draft ? pauseGrundMissing(draft) : null;
+        const missing = draft ? pauseGrundMissing(draft, NOUN) : null;
 
         return (
           <div
@@ -124,7 +129,7 @@ export default function PauseList({ pausen, onSave, onAdd, onRemove }: PauseList
             className={`space-y-2 ${optionStyles.fieldFrame} ${optionStyles.fieldFrameSide}`}
           >
             <h3 className="text-sm font-semibold">
-              {pauseLabel(pause, index)}
+              {pauseLabel(pause, index, NOUN)}
               {durationMs != null ? ` · Dauer ${formatElapsedClock(durationMs)}` : ""}
               {pause.nachgetragen ? (
                 <span className="font-normal text-muted"> · nachgetragen</span>
@@ -133,6 +138,7 @@ export default function PauseList({ pausen, onSave, onAdd, onRemove }: PauseList
             {draft ? (
               <>
                 <PauseGrundFields
+                  noun={NOUN}
                   value={draft}
                   onChange={(next) => setEditing({ index, draft: next })}
                 />
@@ -175,7 +181,7 @@ export default function PauseList({ pausen, onSave, onAdd, onRemove }: PauseList
                       }
                       className="rounded-lg border border-border px-4 py-2 text-sm font-semibold"
                     >
-                      Pausengrund nachträglich bearbeiten
+                      Grund der {NOUN} nachträglich bearbeiten
                     </button>
                   ) : null}
                   {pause.nachgetragen ? (
@@ -203,7 +209,7 @@ export default function PauseList({ pausen, onSave, onAdd, onRemove }: PauseList
           onClick={() => setAdding(true)}
           className="rounded-lg border border-border px-4 py-3 font-semibold"
         >
-          Pause nachträglich hinzufügen
+          {NOUN} nachträglich hinzufügen
         </button>
       )}
     </div>

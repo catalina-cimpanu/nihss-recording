@@ -528,9 +528,9 @@ export function applyPauseDiscard(args: {
   };
 }
 
-export function pauseLabel(pause: Pause, index: number): string {
+export function pauseLabel(pause: Pause, index: number, noun = "Pause"): string {
   const bis = pause.bis ? formatBerlinTime(new Date(pause.bis)) : "läuft";
-  return `Pause ${index + 1} (${formatBerlinTime(new Date(pause.von))}–${bis})`;
+  return `${noun} ${index + 1} (${formatBerlinTime(new Date(pause.von))}–${bis})`;
 }
 
 /** Changes the reasons of a finished pause after the Untersuchung. */

@@ -7,9 +7,12 @@ import type { PauseGrund } from "@/lib/supabase/database.types";
 export type PauseGrundDraft = { gruende: PauseGrund[]; sonstige_text: string };
 
 /** What is still missing before the reasons can be saved, or null. */
-export function pauseGrundMissing(value: PauseGrundDraft): string | null {
+export function pauseGrundMissing(
+  value: PauseGrundDraft,
+  noun = "Pause",
+): string | null {
   if (value.gruende.length === 0) {
-    return "Bitte zuerst den Grund der Pause wählen.";
+    return `Bitte zuerst den Grund der ${noun} wählen.`;
   }
   if (value.gruende.includes("Sonstige") && !value.sonstige_text.trim()) {
     return "Bitte „Sonstige“ kurz beschreiben.";
@@ -22,12 +25,15 @@ type PauseGrundFieldsProps = {
   onChange: (value: PauseGrundDraft) => void;
   /** "overlay": white on the orange pause screen. */
   tone?: "overlay" | "plain";
+  /** How the pause is called in the legend. */
+  noun?: string;
 };
 
 export default function PauseGrundFields({
   value,
   onChange,
   tone = "plain",
+  noun = "Pause",
 }: PauseGrundFieldsProps) {
   const overlay = tone === "overlay";
 
@@ -43,7 +49,7 @@ export default function PauseGrundFields({
   return (
     <fieldset className="w-full space-y-2 text-left">
       <legend className={`mb-2 ${overlay ? "font-semibold" : "text-sm font-semibold"}`}>
-        Grund der Pause (Mehrfachauswahl möglich)
+        Grund der {noun} (Mehrfachauswahl möglich)
       </legend>
       {PAUSE_GRUENDE.map((grund) => (
         <label

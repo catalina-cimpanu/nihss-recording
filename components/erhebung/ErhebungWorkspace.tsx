@@ -722,7 +722,7 @@ export default function ErhebungWorkspace({
               />
             </section>
 
-            <h2 className="text-2xl font-bold">Pausen</h2>
+            <h2 className="text-2xl font-bold">Pausen / Unterbrechungen</h2>
             <section className="rounded-xl border border-border bg-surface p-3">
               <PauseList
                 pausen={erhebung.pausen ?? []}

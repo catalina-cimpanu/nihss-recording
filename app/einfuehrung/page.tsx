@@ -94,7 +94,7 @@ export default function EinfuehrungPage() {
             <strong>Zeiten nachträglich festlegen oder korrigieren</strong> lassen sich die
             Uhrzeiten und die Stroke-/Lyse-Entscheidungen korrigieren oder
             nachtragen; die geklickten Werte bleiben gespeichert.{" "}
-            Unter <strong>Pausen</strong> lässt sich der Grund einer Pause
+            Unter <strong>Pausen / Unterbrechungen</strong> lässt sich der Grund einer Pause
             nachträglich bearbeiten oder eine vergessene Pause nachtragen.{" "}
             <strong>Speichern</strong> lässt die Felder auf der
             Erhebungsseite änderbar. <strong>Abschließen</strong> sperrt sie.
