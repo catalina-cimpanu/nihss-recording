@@ -1,5 +1,10 @@
 import type { EreignisInsert, ErhebungRow } from "@/lib/supabase/database.types";
 import { examTimes, getDecisionDurations } from "@/lib/nihss/duration";
+import {
+  normalizePauseGrund,
+  pauseGrundLabel,
+  type PauseGrundAngabe,
+} from "@/lib/nihss/clicks";
 import { appendTimelineLine, formatTimelineLine } from "@/lib/nihss/timeline";
 import {
   berlinTimeOfDay,
@@ -280,4 +285,127 @@ export function applyTimeCorrection(args: {
   }
 
   return { erhebung: next, ereignisse, error: null };
+}
+
+function pauseRange(pause: { von: string; bis: string | null }): string {
+  return `${minuteOfDay(pause.von)}–${pause.bis ? minuteOfDay(pause.bis) : "läuft"}`;
+}
+
+/** Adds a pause after the Untersuchung (times "HH:MM", Berlin), marked "nachgetragen". */
+export function applyPauseAdd(args: {
+  erhebung: ErhebungRow;
+  von: string;
+  bis: string;
+  grund: PauseGrundAngabe;
+  now: Date;
+}):
+  | { erhebung: ErhebungRow; ereignisse: EreignisInsert[]; error: null }
+  | { error: string } {
+  const row = args.erhebung;
+  if (row.untersuchung_status !== "abgeschlossen") {
+    return { error: "Pausen können erst nach Ende der Untersuchung nachgetragen werden." };
+  }
+  const { startAt, endAt } = examTimes(row);
+  if (!startAt || !endAt) {
+    return { error: "Die Untersuchung hat keine Start- oder Endzeit." };
+  }
+  const vonTime = normalizeTimeOfDay(args.von)?.slice(0, 5);
+  const bisTime = normalizeTimeOfDay(args.bis)?.slice(0, 5);
+  if (!vonTime || !bisTime) {
+    return { error: "Bitte Beginn und Ende der Pause angeben." };
+  }
+  const grund = normalizePauseGrund(args.grund);
+  if (grund.gruende.length === 0) {
+    return { error: "Bitte den Grund der Pause wählen." };
+  }
+
+  let von = nearestBerlinTime(startAt, vonTime)!;
+  let bis = nearestBerlinTime(von, bisTime)!;
+  // Minute precision: a time in the same minute as start/end is moved onto it.
+  if (Date.parse(von) < Date.parse(startAt) && minuteOfDay(startAt) === vonTime) {
+    von = startAt;
+  }
+  if (Date.parse(bis) > Date.parse(endAt) && minuteOfDay(endAt) === bisTime) {
+    bis = endAt;
+  }
+  if (Date.parse(bis) <= Date.parse(von)) {
+    return { error: "Das Ende der Pause muss nach dem Beginn liegen." };
+  }
+  if (Date.parse(von) < Date.parse(startAt) || Date.parse(bis) > Date.parse(endAt)) {
+    return { error: "Die Pause muss zwischen Start und Ende der Untersuchung liegen." };
+  }
+  const pausen = row.pausen ?? [];
+  const overlap = pausen.findIndex(
+    (pause) =>
+      Date.parse(von) < Date.parse(pause.bis ?? endAt) &&
+      Date.parse(bis) > Date.parse(pause.von),
+  );
+  if (overlap >= 0) {
+    return { error: `Die Pause überschneidet sich mit Pause ${overlap + 1}.` };
+  }
+
+  const added = { von, bis, ...grund, nachgetragen: true };
+  const feldLabel = "Pause (nachgetragen)";
+  const wertLabel = `${pauseRange(added)} (Grund: ${pauseGrundLabel(grund)})`;
+  const next: ErhebungRow = {
+    ...row,
+    pausen: [...pausen, added].sort((a, b) => Date.parse(a.von) - Date.parse(b.von)),
+    timeline: appendTimelineLine(
+      row.timeline,
+      formatTimelineLine(args.now, feldLabel, wertLabel),
+    ),
+  };
+
+  return {
+    erhebung: next,
+    ereignisse: [
+      {
+        erhebung_id: next.id,
+        feld_key: "pause_add",
+        feld_label: feldLabel,
+        wert_label: wertLabel,
+        wert_score: null,
+        ereignis_typ: KORREKTUR_EREIGNIS_TYP,
+      },
+    ],
+    error: null,
+  };
+}
+
+/** Removes a pause that was added afterwards; recorded pauses stay. */
+export function applyPauseRemove(args: {
+  erhebung: ErhebungRow;
+  index: number;
+  now: Date;
+}): { erhebung: ErhebungRow; ereignisse: EreignisInsert[] } {
+  const row = args.erhebung;
+  const pause = row.pausen?.[args.index];
+  if (row.untersuchung_status !== "abgeschlossen" || !pause?.nachgetragen) {
+    return { erhebung: row, ereignisse: [] };
+  }
+
+  const feldLabel = "Pause (nachgetragen)";
+  const wertLabel = `${pauseRange(pause)} entfernt`;
+  const next: ErhebungRow = {
+    ...row,
+    pausen: row.pausen.filter((_, index) => index !== args.index),
+    timeline: appendTimelineLine(
+      row.timeline,
+      formatTimelineLine(args.now, feldLabel, wertLabel),
+    ),
+  };
+
+  return {
+    erhebung: next,
+    ereignisse: [
+      {
+        erhebung_id: next.id,
+        feld_key: "pause_remove",
+        feld_label: feldLabel,
+        wert_label: wertLabel,
+        wert_score: null,
+        ereignis_typ: KORREKTUR_EREIGNIS_TYP,
+      },
+    ],
+  };
 }

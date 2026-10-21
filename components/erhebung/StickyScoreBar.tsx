@@ -10,7 +10,7 @@ import { calculateGfast, calculateNihss } from "@/lib/nihss/scoring";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
 /** How often an undecided Stroke/Lyse row flashes extra (globals.css: decision-nudge). */
-const DECISION_NUDGE_MS = 60_000;
+const DECISION_NUDGE_MS = 30_000;
 const NUDGE_FLASH_MS = 1200;
 
 type StickyScoreBarProps = {

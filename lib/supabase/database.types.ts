@@ -23,6 +23,8 @@ export type Pause = {
   bis: Timestamp | null;
   gruende?: PauseGrund[];
   sonstige_text?: string | null;
+  /** Added after the Untersuchung instead of clicked during it. */
+  nachgetragen?: boolean;
 };
 
 export type Database = {

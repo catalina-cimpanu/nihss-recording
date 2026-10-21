@@ -77,7 +77,7 @@ export default function PauseOverlay({
             onClick={onDiscard}
             className="rounded-xl border-2 border-white px-6 py-2 font-semibold text-white hover:bg-white/15"
           >
-            Ich habe mich verklickt
+            Keine Pause – versehentlich gedrückt
           </button>
         </div>
       </div>

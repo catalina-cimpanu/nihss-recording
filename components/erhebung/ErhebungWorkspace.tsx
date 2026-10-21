@@ -48,6 +48,8 @@ import {
   shouldAutoCloseExam,
 } from "@/lib/nihss/duration";
 import {
+  applyPauseAdd,
+  applyPauseRemove,
   applyTimeCorrection,
   type TimeCorrectionPatch,
 } from "@/lib/nihss/time-correction";
@@ -480,6 +482,36 @@ export default function ErhebungWorkspace({
     }
   }
 
+  async function addPause(
+    von: string,
+    bis: string,
+    grund: PauseGrundAngabe,
+  ): Promise<string | null> {
+    const result = applyPauseAdd({
+      erhebung: erhebungRef.current,
+      von,
+      bis,
+      grund,
+      now: new Date(),
+    });
+    if (result.error !== null) {
+      return result.error;
+    }
+    await persist(result.erhebung, result.ereignisse);
+    return null;
+  }
+
+  async function removePause(index: number) {
+    const result = applyPauseRemove({
+      erhebung: erhebungRef.current,
+      index,
+      now: new Date(),
+    });
+    if (result.ereignisse.length > 0) {
+      await persist(result.erhebung, result.ereignisse);
+    }
+  }
+
   async function saveTimeCorrection(
     patch: TimeCorrectionPatch,
   ): Promise<string | null> {
@@ -690,14 +722,15 @@ export default function ErhebungWorkspace({
               />
             </section>
 
-            {erhebung.pausen?.length ? (
-              <>
-                <h2 className="text-2xl font-bold">Pausen</h2>
-                <section className="rounded-xl border border-border bg-surface p-3">
-                  <PauseList pausen={erhebung.pausen} onSave={savePauseGrund} />
-                </section>
-              </>
-            ) : null}
+            <h2 className="text-2xl font-bold">Pausen</h2>
+            <section className="rounded-xl border border-border bg-surface p-3">
+              <PauseList
+                pausen={erhebung.pausen ?? []}
+                onSave={savePauseGrund}
+                onAdd={addPause}
+                onRemove={removePause}
+              />
+            </section>
 
             <h2 className="text-2xl font-bold">Angaben zum Konsil</h2>
             <section className="space-y-3 rounded-xl border border-border bg-surface p-3">

@@ -430,7 +430,7 @@ function closeOpenPause(
   );
 }
 
-function normalizePauseGrund(grund: PauseGrundAngabe): PauseGrundAngabe {
+export function normalizePauseGrund(grund: PauseGrundAngabe): PauseGrundAngabe {
   return {
     gruende: grund.gruende,
     sonstige_text: grund.gruende.includes("Sonstige")

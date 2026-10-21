@@ -3,6 +3,8 @@ import { describe, it } from "node:test";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 import { getDecisionDurations } from "@/lib/nihss/duration";
 import {
+  applyPauseAdd,
+  applyPauseRemove,
   applyTimeCorrection,
   initialTimeCorrectionDraft,
   timeCorrectionPatch,
@@ -37,6 +39,7 @@ function row(overrides: Partial<ErhebungRow> = {}): ErhebungRow {
     lyse_korrigiert_at: null,
     stroke_status_korrigiert: null,
     lyse_status_korrigiert: null,
+    pausen: [],
     ...overrides,
   } as ErhebungRow;
 }
@@ -250,5 +253,62 @@ describe("timeCorrectionPatch", () => {
     if (back.error !== null) return;
     assert.equal(back.erhebung.stroke_status_korrigiert, null);
     assert.equal(back.ereignisse[0]?.wert_label, "Korrektur entfernt");
+  });
+});
+
+describe("applyPauseAdd / applyPauseRemove", () => {
+  const grund = { gruende: ["Telefonat" as const], sonstige_text: null };
+
+  it("adds a pause afterwards, marked nachgetragen, and leaves it out of the durations", () => {
+    const erhebung = row();
+    const result = applyPauseAdd({ erhebung, von: "10:02", bis: "10:05", grund, now: new Date() });
+    assert.equal(result.error, null);
+    if (result.error !== null) return;
+    assert.deepEqual(result.erhebung.pausen, [
+      {
+        von: "2026-10-21T08:02:00.000Z",
+        bis: "2026-10-21T08:05:00.000Z",
+        gruende: ["Telefonat"],
+        sonstige_text: null,
+        nachgetragen: true,
+      },
+    ]);
+    assert.equal(result.ereignisse[0]?.feld_label, "Pause (nachgetragen)");
+    assert.equal(result.ereignisse[0]?.wert_label, "10:02–10:05 (Grund: Telefonat)");
+    assert.equal(getDecisionDurations(result.erhebung).dauer_untersuchung_ms, 7 * 60_000);
+
+    const removed = applyPauseRemove({ erhebung: result.erhebung, index: 0, now: new Date() });
+    assert.deepEqual(removed.erhebung.pausen, []);
+    assert.equal(removed.ereignisse[0]?.wert_label, "10:02–10:05 entfernt");
+  });
+
+  it("rejects pauses outside the Untersuchung, reversed, or overlapping another pause", () => {
+    const erhebung = row({
+      pausen: [{ von: "2026-10-21T08:06:00.000Z", bis: "2026-10-21T08:07:00.000Z" }],
+    });
+    const now = new Date();
+    const outside = applyPauseAdd({ erhebung, von: "09:58", bis: "10:01", grund, now });
+    assert.match(outside.error ?? "", /zwischen Start und Ende/);
+    const reversed = applyPauseAdd({ erhebung, von: "10:04", bis: "10:03", grund, now });
+    assert.match(reversed.error ?? "", /nach dem Beginn/);
+    const overlapping = applyPauseAdd({ erhebung, von: "10:05", bis: "10:07", grund, now });
+    assert.match(overlapping.error ?? "", /überschneidet sich mit Pause 1/);
+  });
+
+  it("keeps the pauses in order and never removes a recorded pause", () => {
+    const recorded = { von: "2026-10-21T08:06:00.000Z", bis: "2026-10-21T08:07:00.000Z" };
+    const result = applyPauseAdd({
+      erhebung: row({ pausen: [recorded] }),
+      von: "10:02",
+      bis: "10:03",
+      grund,
+      now: new Date(),
+    });
+    assert.equal(result.error, null);
+    if (result.error !== null) return;
+    assert.equal(result.erhebung.pausen[1], recorded);
+    const kept = applyPauseRemove({ erhebung: result.erhebung, index: 1, now: new Date() });
+    assert.equal(kept.ereignisse.length, 0);
+    assert.equal(kept.erhebung.pausen.length, 2);
   });
 });

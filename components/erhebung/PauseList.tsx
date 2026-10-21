@@ -13,16 +13,106 @@ import type { Pause } from "@/lib/supabase/database.types";
 type PauseListProps = {
   pausen: Pause[];
   onSave: (index: number, grund: PauseGrundAngabe) => Promise<void>;
+  /** Returns an error message, or null when the pause was added. */
+  onAdd: (von: string, bis: string, grund: PauseGrundAngabe) => Promise<string | null>;
+  onRemove: (index: number) => Promise<void>;
 };
 
-export default function PauseList({ pausen, onSave }: PauseListProps) {
+const EMPTY_GRUND: PauseGrundDraft = { gruende: [], sonstige_text: "" };
+
+function AddPauseForm({
+  onAdd,
+  onCancel,
+}: {
+  onAdd: PauseListProps["onAdd"];
+  onCancel: () => void;
+}) {
+  const [von, setVon] = useState("");
+  const [bis, setBis] = useState("");
+  const [grund, setGrund] = useState<PauseGrundDraft>(EMPTY_GRUND);
+  const [error, setError] = useState<string | null>(null);
+  const missing = !von || !bis ? "Bitte Beginn und Ende der Pause angeben." : pauseGrundMissing(grund);
+
+  return (
+    <div className={`space-y-3 ${optionStyles.fieldFrame} ${optionStyles.fieldFrameSide}`}>
+      <h3 className="text-sm font-semibold">Pause nachträglich hinzufügen</h3>
+      <div className="flex flex-wrap gap-3 text-sm">
+        <label className="flex items-center gap-2">
+          Beginn
+          <input
+            type="time"
+            value={von}
+            onChange={(event) => {
+              setError(null);
+              setVon(event.target.value);
+            }}
+            className="rounded-lg border border-border bg-surface px-3 py-2 tabular-nums"
+          />
+        </label>
+        <label className="flex items-center gap-2">
+          Ende
+          <input
+            type="time"
+            value={bis}
+            onChange={(event) => {
+              setError(null);
+              setBis(event.target.value);
+            }}
+            className="rounded-lg border border-border bg-surface px-3 py-2 tabular-nums"
+          />
+        </label>
+      </div>
+      <PauseGrundFields
+        value={grund}
+        onChange={(next) => {
+          setError(null);
+          setGrund(next);
+        }}
+      />
+      {error ?? missing ? (
+        <p className="text-sm text-tempis-signal">{error ?? missing}</p>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={missing != null}
+          onClick={() => {
+            void onAdd(von, bis, grund).then((result) => {
+              if (result) {
+                setError(result);
+              } else {
+                onCancel();
+              }
+            });
+          }}
+          className="rounded-lg bg-tempis-blue-dark px-4 py-2 font-semibold text-white hover:bg-tempis-blue-darker disabled:bg-tempis-dusty"
+        >
+          Speichern
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg border border-border px-4 py-2 font-semibold"
+        >
+          Abbrechen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function PauseList({ pausen, onSave, onAdd, onRemove }: PauseListProps) {
   // The pause whose reason is being edited, with its draft.
   const [editing, setEditing] = useState<{ index: number; draft: PauseGrundDraft } | null>(
     null,
   );
+  const [adding, setAdding] = useState(false);
 
   return (
     <div className="space-y-3">
+      {pausen.length === 0 ? (
+        <p className="text-sm text-muted">Keine Pausen erfasst.</p>
+      ) : null}
       {pausen.map((pause, index) => {
         const durationMs = pause.bis ? Date.parse(pause.bis) - Date.parse(pause.von) : null;
         const draft = editing?.index === index ? editing.draft : null;
@@ -36,6 +126,9 @@ export default function PauseList({ pausen, onSave }: PauseListProps) {
             <h3 className="text-sm font-semibold">
               {pauseLabel(pause, index)}
               {durationMs != null ? ` · Dauer ${formatElapsedClock(durationMs)}` : ""}
+              {pause.nachgetragen ? (
+                <span className="font-normal text-muted"> · nachgetragen</span>
+              ) : null}
             </h3>
             {draft ? (
               <>
@@ -67,28 +160,52 @@ export default function PauseList({ pausen, onSave }: PauseListProps) {
             ) : (
               <>
                 <p className="text-sm">Grund: {pauseGrundLabel(pause)}</p>
-                {pause.bis ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setEditing({
-                        index,
-                        draft: {
-                          gruende: pause.gruende ?? [],
-                          sonstige_text: pause.sonstige_text ?? "",
-                        },
-                      })
-                    }
-                    className="rounded-lg border border-border px-4 py-2 text-sm font-semibold"
-                  >
-                    Pausengrund nachträglich bearbeiten
-                  </button>
-                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  {pause.bis ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditing({
+                          index,
+                          draft: {
+                            gruende: pause.gruende ?? [],
+                            sonstige_text: pause.sonstige_text ?? "",
+                          },
+                        })
+                      }
+                      className="rounded-lg border border-border px-4 py-2 text-sm font-semibold"
+                    >
+                      Pausengrund nachträglich bearbeiten
+                    </button>
+                  ) : null}
+                  {pause.nachgetragen ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void onRemove(index);
+                      }}
+                      className="rounded-lg border border-tempis-signal px-4 py-2 text-sm font-semibold text-tempis-signal"
+                    >
+                      Entfernen
+                    </button>
+                  ) : null}
+                </div>
               </>
             )}
           </div>
         );
       })}
+      {adding ? (
+        <AddPauseForm onAdd={onAdd} onCancel={() => setAdding(false)} />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="rounded-lg border border-border px-4 py-3 font-semibold"
+        >
+          Pause nachträglich hinzufügen
+        </button>
+      )}
     </div>
   );
 }
