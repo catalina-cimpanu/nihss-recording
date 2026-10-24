@@ -6,7 +6,10 @@ import optionStyles from "@/components/nihss_items/nihssOptions.module.css";
 import {
   SHORT_TEXT_MAX,
   UMSTAENDE,
-  digitsOnly,
+  SOLO_BESUCH_ID_ERROR,
+  SOLO_BESUCH_ID_LENGTH,
+  soloBesuchIdDigits,
+  soloBesuchIdState,
   anmerkungenAnswer,
   hasKi,
   kontraindikationFields,
@@ -16,12 +19,9 @@ import {
 } from "@/lib/nihss/followup";
 import type { ErhebungRow } from "@/lib/supabase/database.types";
 
-type FollowupVisibility = "always" | "never";
-
 type FollowupFieldsProps = {
   values: FollowupValues;
   mode: "pre" | "post";
-  preFields?: FollowupVisibility;
   disabled?: boolean;
   onChange: (patch: Partial<ErhebungRow>) => void;
 };
@@ -150,34 +150,38 @@ function KontraindikationReasons({
 export default function FollowupFields({
   values,
   mode,
-  preFields,
   disabled,
   onChange,
 }: FollowupFieldsProps) {
-  const showSolo = (preFields ?? (mode === "pre" ? "always" : "never")) === "always";
+  const soloId = soloBesuchIdState(values.solo_patienten_id);
 
   return (
     <div className="space-y-4">
-      {showSolo ? (
-        <QuestionFrame title="Solo-Patienten-ID" filled={Boolean(values.solo_patienten_id)}>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            autoComplete="off"
-            disabled={disabled}
-            value={values.solo_patienten_id ?? ""}
-            onChange={(event) =>
-              onChange({ solo_patienten_id: digitsOnly(event.target.value) })
-            }
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2"
-            aria-describedby="solo-id-hint"
-          />
-          <p id="solo-id-hint" className="text-xs text-muted">
-            Nur Ziffern. Buchstaben werden nicht übernommen.
-          </p>
-        </QuestionFrame>
-      ) : null}
+      <QuestionFrame title="Solo-Besuch-ID" filled={soloId === "ok"}>
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="off"
+          maxLength={SOLO_BESUCH_ID_LENGTH}
+          disabled={disabled}
+          value={values.solo_patienten_id ?? ""}
+          onChange={(event) =>
+            onChange({ solo_patienten_id: soloBesuchIdDigits(event.target.value) })
+          }
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2"
+          aria-describedby="solo-id-hint"
+          aria-invalid={soloId === "incomplete"}
+        />
+        <p
+          id="solo-id-hint"
+          className={`text-xs ${soloId === "incomplete" ? "text-tempis-signal" : "text-muted"}`}
+        >
+          {soloId === "incomplete"
+            ? SOLO_BESUCH_ID_ERROR
+            : "Genau 6 Ziffern. Buchstaben werden nicht übernommen."}
+        </p>
+      </QuestionFrame>
 
       <QuestionFrame
         title="Trifft eine der folgenden Situationen zu?"

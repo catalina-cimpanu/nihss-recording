@@ -15,6 +15,8 @@ import {
   applyFollowupChange,
   emptyFollowupValues,
   preExamFollowupPatch,
+  SOLO_BESUCH_ID_ERROR,
+  soloBesuchIdState,
   type FollowupValues,
 } from "@/lib/nihss/followup";
 import { untersuchungstypSchema } from "@/lib/nihss/validation";
@@ -87,6 +89,11 @@ export default function NewErhebungForm() {
     if (!created) {
       setError("Die Erhebung konnte nicht erstellt werden. Bitte erneut versuchen.");
       setStep("typ");
+      return;
+    }
+    // Optional, but if given it must be complete.
+    if (soloBesuchIdState(values.solo_patienten_id) === "incomplete") {
+      setError(SOLO_BESUCH_ID_ERROR);
       return;
     }
 

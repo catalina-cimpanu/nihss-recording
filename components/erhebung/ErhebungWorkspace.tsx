@@ -742,7 +742,6 @@ export default function ErhebungWorkspace({
               <FollowupFields
                 values={{ ...emptyFollowupValues(), ...erhebung }}
                 mode="post"
-                preFields="always"
                 disabled={followupClosed}
                 onChange={handleFollowupChange}
               />

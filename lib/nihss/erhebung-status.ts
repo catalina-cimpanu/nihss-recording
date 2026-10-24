@@ -3,7 +3,7 @@ import {
   anmerkungenAnswer,
   hasKi,
   hasUmstandOption,
-  isSoloPatientenIdMissing,
+  soloBesuchIdState,
   umstaendeAnswer,
   type FollowupValues,
 } from "@/lib/nihss/followup";
@@ -35,8 +35,11 @@ export function formatErhebungStatus(
 
 export function missingFollowupLabels(values: FollowupValues): string[] {
   const missing: string[] = [];
-  if (isSoloPatientenIdMissing(values)) {
-    missing.push("Solo-Patienten-ID");
+  const soloId = soloBesuchIdState(values.solo_patienten_id);
+  if (soloId === "missing") {
+    missing.push("Solo-Besuch-ID");
+  } else if (soloId === "incomplete") {
+    missing.push("Solo-Besuch-ID (genau 6 Ziffern)");
   }
   if (values.lyse_kontraindikation_vor_untersuchung !== "Nein" && !hasKi(values)) {
     missing.push("Lyse-Kontraindikation vor Untersuchung");

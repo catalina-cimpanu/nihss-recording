@@ -56,7 +56,7 @@ export default function EinfuehrungPage() {
         <ol className="list-decimal space-y-3 pl-5 text-sm">
           <li>
             <strong>Erhebung erstellen.</strong> Unter Neue Erhebung wählen Sie
-            Test oder Echter Patient. Optional Solo-Patienten-ID (nur Ziffern)
+            Test oder Echter Patient. Optional Solo-Besuch-ID (genau 6 Ziffern)
             angeben oder überspringen.
           </li>
           <li>

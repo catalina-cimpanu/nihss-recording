@@ -48,7 +48,7 @@ describe("isFollowupIncomplete", () => {
     assert.equal(
       isFollowupIncomplete({
         ...emptyFollowupValues(),
-        solo_patienten_id: "12",
+        solo_patienten_id: "123456",
         lyse_kontraindikation_vor_untersuchung: "Nein",
         tempis_stroke_verdacht: "Ja",
         tempis_lyse_empfehlung: "Nein",
@@ -62,7 +62,7 @@ describe("isFollowupIncomplete", () => {
   it("requires a KI reason when vor is Ja, then beeinflusst", () => {
     const vorJa: FollowupValues = {
       ...emptyFollowupValues(),
-      solo_patienten_id: "12",
+      solo_patienten_id: "123456",
       lyse_kontraindikation_vor_untersuchung: "Ja",
       tempis_stroke_verdacht: "Ja",
       tempis_lyse_empfehlung: "Nein",
@@ -89,22 +89,30 @@ describe("isFollowupIncomplete", () => {
 describe("erhebungCloseWarning", () => {
   it("always warns that data cannot be edited afterwards", () => {
     assert.match(erhebungCloseWarning([]), /nicht mehr geändert/);
-    assert.match(erhebungCloseWarning(["Solo-Patienten-ID"]), /Nicht alle Angaben/);
-    assert.match(erhebungCloseWarning(["Solo-Patienten-ID"]), /Solo-Patienten-ID/);
-    assert.match(erhebungCloseWarning(["Solo-Patienten-ID"]), /nicht mehr geändert/);
+    assert.match(erhebungCloseWarning(["Solo-Besuch-ID"]), /Nicht alle Angaben/);
+    assert.match(erhebungCloseWarning(["Solo-Besuch-ID"]), /Solo-Besuch-ID/);
+    assert.match(erhebungCloseWarning(["Solo-Besuch-ID"]), /nicht mehr geändert/);
   });
 
   it("lists the missing follow-up fields", () => {
     const missing = missingFollowupLabels(emptyFollowupValues());
-    assert.ok(missing.includes("Solo-Patienten-ID"));
+    assert.ok(missing.includes("Solo-Besuch-ID"));
     assert.ok(missing.includes("TEMPiS Stroke-Verdacht"));
     assert.ok(missing.includes("Umstände der Untersuchung"));
     assert.equal(isFollowupIncomplete(emptyFollowupValues()), true);
   });
 
+  it("lists an incomplete Solo-Besuch-ID", () => {
+    const missing = missingFollowupLabels({
+      ...emptyFollowupValues(),
+      solo_patienten_id: "12345",
+    });
+    assert.ok(missing.includes("Solo-Besuch-ID (genau 6 Ziffern)"));
+  });
+
   it("asks to close anyway when fields are missing", () => {
     assert.match(
-      erhebungCloseConfirmQuestion(["Solo-Patienten-ID"]),
+      erhebungCloseConfirmQuestion(["Solo-Besuch-ID"]),
       /trotzdem abschließen/,
     );
     assert.match(

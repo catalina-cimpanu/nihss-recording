@@ -306,6 +306,26 @@ export function digitsOnly(value: string): string {
   return value.replace(/\D/g, "");
 }
 
+/** The Solo-Besuch-ID (column solo_patienten_id) has exactly this many digits. */
+export const SOLO_BESUCH_ID_LENGTH = 6;
+export const SOLO_BESUCH_ID_ERROR = `Die Solo-Besuch-ID muss genau ${SOLO_BESUCH_ID_LENGTH} Ziffern haben.`;
+
+/** Digits only, never more than SOLO_BESUCH_ID_LENGTH. */
+export function soloBesuchIdDigits(value: string): string {
+  return digitsOnly(value).slice(0, SOLO_BESUCH_ID_LENGTH);
+}
+
+export function soloBesuchIdState(
+  value: string | null | undefined,
+): "missing" | "incomplete" | "ok" {
+  if (!value) {
+    return "missing";
+  }
+  return value.length === SOLO_BESUCH_ID_LENGTH && /^\d+$/.test(value)
+    ? "ok"
+    : "incomplete";
+}
+
 export function clipShortText(value: string): string {
   return value.slice(0, SHORT_TEXT_MAX);
 }
@@ -338,7 +358,7 @@ export function applyFollowupPatch(
   const next: ErhebungRow = { ...erhebung, ...patch };
 
   if (patch.solo_patienten_id != null) {
-    next.solo_patienten_id = digitsOnly(String(patch.solo_patienten_id)) || null;
+    next.solo_patienten_id = soloBesuchIdDigits(String(patch.solo_patienten_id)) || null;
   }
 
   if (next.lyse_kontraindikation_vor_untersuchung !== "Ja") {
@@ -556,19 +576,11 @@ export function followupEreignis(
   };
 }
 
-export function isSoloPatientenIdMissing(values: FollowupValues): boolean {
-  return values.solo_patienten_id == null || values.solo_patienten_id === "";
-}
-
-export function needsPreExamFollowup(erhebung: FollowupValues): boolean {
-  return isSoloPatientenIdMissing(erhebung);
-}
-
 export function preExamFollowupPatch(
   values: FollowupValues,
 ): Partial<FollowupValues> {
   const patch: Partial<FollowupValues> = {
-    solo_patienten_id: digitsOnly(values.solo_patienten_id ?? "") || null,
+    solo_patienten_id: soloBesuchIdDigits(values.solo_patienten_id ?? "") || null,
   };
 
   for (const item of SYMPTOME) {

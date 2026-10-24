@@ -9,7 +9,7 @@ import {
   hasKi,
   umstaendeAnswer,
   anmerkungenAnswer,
-  needsPreExamFollowup,
+  soloBesuchIdState,
   preExamFollowupPatch,
 } from "@/lib/nihss/followup";
 
@@ -37,9 +37,19 @@ describe("digitsOnly", () => {
 });
 
 describe("applyFollowupPatch", () => {
-  it("stores Solo-Patienten-ID as digits only", () => {
+  it("stores the Solo-Besuch-ID as digits only, at most 6", () => {
     const next = applyFollowupPatch(row(), { solo_patienten_id: "A12B3" });
     assert.equal(next.solo_patienten_id, "123");
+    const long = applyFollowupPatch(row(), { solo_patienten_id: "12345678" });
+    assert.equal(long.solo_patienten_id, "123456");
+  });
+
+  it("accepts the Solo-Besuch-ID only with exactly 6 digits", () => {
+    assert.equal(soloBesuchIdState(null), "missing");
+    assert.equal(soloBesuchIdState(""), "missing");
+    assert.equal(soloBesuchIdState("12345"), "incomplete");
+    assert.equal(soloBesuchIdState("123456"), "ok");
+    assert.equal(soloBesuchIdState("1234567"), "incomplete");
   });
 
   it("keeps KI reasons and beeinflusst while vor is Ja", () => {
@@ -248,26 +258,18 @@ describe("pre-exam followup", () => {
   it("only carries the Solo-ID and symptoms, never Kontraindikationen", () => {
     const patch = preExamFollowupPatch({
       ...emptyFollowupValues(),
-      solo_patienten_id: "12ab",
+      solo_patienten_id: "12ab3456789",
       lyse_kontraindikation_vor_untersuchung: "Ja",
       lyse_ki_oak: true,
     });
-    assert.equal(patch.solo_patienten_id, "12");
+    assert.equal(patch.solo_patienten_id, "123456");
     assert.equal("lyse_kontraindikation_vor_untersuchung" in patch, false);
     assert.equal("lyse_ki_oak" in patch, false);
-    assert.equal(
-      needsPreExamFollowup({ ...emptyFollowupValues(), ...patch }),
-      false,
-    );
 
     const empty = preExamFollowupPatch({
       ...emptyFollowupValues(),
       solo_patienten_id: "",
     });
     assert.equal(empty.solo_patienten_id, null);
-    assert.equal(
-      needsPreExamFollowup({ ...emptyFollowupValues(), ...empty }),
-      true,
-    );
   });
 });
